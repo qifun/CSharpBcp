@@ -11,18 +11,24 @@ namespace Bcp
 {
     public static class BcpIO
     {
+        private delegate void ProcessReadVarint(uint result);
 
-        private static async Task<uint> readUnisignedVarint(Stream stream, CancellationToken cancellationToken)
+        private delegate void ProcessReadAll();
+        
+        static object writeLock = new object();
+
+        private static void readUnsignedVarint(Stream stream, ProcessReadVarint processReadVarint, BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var buffer = new byte[1];
             var i = 0;
-            var result = 0U;
-            for (; ; )
+            uint result = 0U;
+            AsyncCallback asyncCallback = null;
+            asyncCallback = asyncResult =>
             {
-                var numBytesRead = await stream.ReadAsync(buffer, 0, 1, cancellationToken);
+                int numBytesRead = stream.EndRead(asyncResult);
                 if (numBytesRead != 1)
                 {
-                    throw new EndOfStreamException();
+                    exceptionHandler(new EndOfStreamException());
                 }
                 uint b = buffer[0];
                 if (i < 32)
@@ -31,17 +37,20 @@ namespace Bcp
                     {
                         result |= ((b & 0x7f) << i);
                         i += 7;
+                        stream.BeginRead(buffer, 0, 1, asyncCallback, null);
                     }
                     else
                     {
-                        return result | (b << i);
+                        result |= (b << i);
+                        processReadVarint(result);
                     }
                 }
                 else
                 {
-                    throw new BcpException.VarintTooBig();
+                    exceptionHandler(new BcpException.VarintTooBig());
                 }
-            }
+            };
+            stream.BeginRead(buffer, 0, 1, asyncCallback, null);
         }
 
         private static void writeUnsignedVarint(Stream stream, uint value)
@@ -54,29 +63,29 @@ namespace Bcp
             stream.WriteByte((byte)value);
         }
 
-        public static void Write(Stream stream, Bcp.Acknowledge packet)
+        private static void Write(Stream stream, Bcp.Acknowledge packet)
         {
             stream.WriteByte(Bcp.Acknowledge.HeadByte);
         }
 
-        public static void Write(Stream stream, Bcp.Renew packet)
+        private static void Write(Stream stream, Bcp.Renew packet)
         {
             stream.WriteByte(Bcp.Renew.HeadByte);
         }
 
-        public static void Write(Stream stream, Bcp.Finish packet)
+        private static void Write(Stream stream, Bcp.Finish packet)
         {
             stream.WriteByte(Bcp.Finish.HeadByte);
         }
 
-        public static void Write(Stream stream, Bcp.RetransmissionFinish packet)
+        private static void Write(Stream stream, Bcp.RetransmissionFinish packet)
         {
             stream.WriteByte(Bcp.RetransmissionFinish.HeadByte);
             writeUnsignedVarint(stream, packet.ConnectionId);
             writeUnsignedVarint(stream, packet.PackId);
         }
 
-        public static void Write(Stream stream, Bcp.RetransmissionData packet)
+        private static void Write(Stream stream, Bcp.RetransmissionData packet)
         {
             stream.WriteByte(Bcp.RetransmissionData.HeadByte);
             writeUnsignedVarint(stream, packet.ConnectionId);
@@ -88,7 +97,7 @@ namespace Bcp
             }
         }
 
-        public static void Write(Stream stream, Bcp.Data packet)
+        private static void Write(Stream stream, Bcp.Data packet)
         {
             stream.WriteByte(Bcp.Data.HeadByte);
             writeUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
@@ -98,12 +107,12 @@ namespace Bcp
             }
         }
 
-        public static void Write(Stream stream, Bcp.ShutDown packet)
+        private static void Write(Stream stream, Bcp.ShutDown packet)
         {
             stream.WriteByte(Bcp.ShutDown.HeadByte);
         }
 
-        public static void Write(Stream stream, Bcp.HeartBeat packet)
+        private static void Write(Stream stream, Bcp.HeartBeat packet)
         {
             stream.WriteByte(Bcp.HeartBeat.HeadByte);
         }
@@ -126,91 +135,153 @@ namespace Bcp
 
         public static void Write(Stream stream, Bcp.IPacket packet)
         {
-            Action<Stream, Bcp.IPacket> writeCallback;
-            var isSuccess = writeCallbacks.TryGetValue(packet.GetType(), out writeCallback);
-            Debug.Assert(isSuccess);
-            writeCallback(stream, packet);
+            lock (writeLock)
+            {
+                Action<Stream, Bcp.IPacket> writeCallback;
+                var isSuccess = writeCallbacks.TryGetValue(packet.GetType(), out writeCallback);
+                Debug.Assert(isSuccess);
+                writeCallback(stream, packet);
+            }
         }
 
-        private static async Task readAll(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private static void readAll(
+            Stream stream, 
+            byte[] buffer, 
+            int offset, 
+            int count, 
+            ProcessReadAll processReadAll, 
+            BcpDelegate.ExceptionHandler exceptionHandler)
         {
-            while (offset < count)
+            AsyncCallback asyncCallback = null;
+            asyncCallback = asyncResult =>
             {
-                var numBytesRead = await stream.ReadAsync(buffer, offset, count, cancellationToken);
+                int numBytesRead = stream.EndRead(asyncResult);
                 if (numBytesRead == 0)
                 {
-                    throw new EndOfStreamException();
+                    exceptionHandler(new EndOfStreamException());
                 }
                 else
                 {
                     offset += numBytesRead;
                 }
-            }
+                if (offset < count)
+                {
+                    stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                }
+                else
+                {
+                    processReadAll();
+                }
+            };
+            stream.BeginRead(buffer, offset, count, asyncCallback, null);
         }
 
-        public static async Task<Bcp.IPacket> Read(Stream stream, CancellationToken cancellationToken)
+        public static void Read(Stream stream, BcpDelegate.ProcessRead processRead, BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var headBuffer = new byte[1];
-            var numBytesRead = await stream.ReadAsync(headBuffer, 0, 1, cancellationToken);
-            if (numBytesRead != 1)
+            AsyncCallback asyncCallback = null;
+            asyncCallback = asyncResult =>
             {
-                throw new EndOfStreamException();
-            }
-            switch (headBuffer[0])
-            {
-                case Bcp.Data.HeadByte:
-                    {
-                        var length = await readUnisignedVarint(stream, cancellationToken);
-                        if (length > Bcp.MaxDataSize)
+                int numBytesRead = stream.EndRead(asyncResult);
+                if (numBytesRead != 1)
+                {
+                    throw new EndOfStreamException();
+                }
+                switch (headBuffer[0])
+                {
+                    case Bcp.Data.HeadByte:
                         {
-                            throw new BcpException.DataTooBig();
+                            ProcessReadVarint processReadLength = delegate(uint length)
+                            {
+                                if (length > Bcp.MaxDataSize)
+                                {
+                                    throw new BcpException.DataTooBig();
+                                }
+                                var buffer = new byte[length];
+                                ProcessReadAll processReadAll = delegate()
+                                {
+                                    processRead(new Bcp.Data(new[] { (new ArraySegment<byte>(buffer)) }));
+                                };
+                                readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
+                            };
+                            readUnsignedVarint(stream, processReadLength, exceptionHandler);
+                            break;
                         }
-                        var buffer = new byte[length];
-                        await readAll(stream, buffer, 0, (int)length, cancellationToken);
-                        return new Bcp.Data(new[] { (new ArraySegment<byte>(buffer)) });
-                    }
-                case Bcp.RetransmissionData.HeadByte:
-                    {
-                        var connectionId = await readUnisignedVarint(stream, cancellationToken);
-                        var packId = await readUnisignedVarint(stream, cancellationToken);
-                        var length = await readUnisignedVarint(stream, cancellationToken);
-                        if (length > Bcp.MaxDataSize)
+                    case Bcp.RetransmissionData.HeadByte:
                         {
-                            throw new BcpException.DataTooBig();
+                            ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
+                            {
+                                ProcessReadVarint processReadPackId = delegate(uint packId)
+                                {
+                                    ProcessReadVarint processReadLength = delegate(uint length)
+                                    {
+                                        if (length > Bcp.MaxDataSize)
+                                        {
+                                            throw new BcpException.DataTooBig();
+                                        }
+                                        var buffer = new byte[length];
+                                        ProcessReadAll processReadAll = delegate()
+                                        {
+                                            processRead(new Bcp.RetransmissionData(connectionId, packId, new[] { (new ArraySegment<byte>(buffer)) }));
+                                        };
+                                        readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
+
+                                    };
+                                    readUnsignedVarint(stream, processReadLength, exceptionHandler);
+                                };
+                                readUnsignedVarint(stream, processReadPackId, exceptionHandler);
+                            };
+                            readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                            break;
                         }
-                        var buffer = new byte[length];
-                        await readAll(stream, buffer, 0, (int)length, cancellationToken);
-                        return new Bcp.RetransmissionData(connectionId, packId, new[] { (new ArraySegment<byte>(buffer)) });
-                    }
-                case Bcp.RetransmissionFinish.HeadByte:
-                    {
-                        var connectionId = await readUnisignedVarint(stream, cancellationToken);
-                        var packId = await readUnisignedVarint(stream, cancellationToken);
-                        return new Bcp.RetransmissionFinish(connectionId, packId);
-                    }
-                case Bcp.Acknowledge.HeadByte:
-                    return new Bcp.Acknowledge();
-                case Bcp.Renew.HeadByte:
-                    return new Bcp.Renew();
-                case Bcp.Finish.HeadByte:
-                    return new Bcp.Finish();
-                case Bcp.ShutDown.HeadByte:
-                    return new Bcp.ShutDown();
-                case Bcp.HeartBeat.HeadByte:
-                    return new Bcp.HeartBeat();
-                default:
-                    throw new BcpException.UnknownHeadByte();
-            }
+                    case Bcp.RetransmissionFinish.HeadByte:
+                        {
+                            ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
+                            {
+                                ProcessReadVarint processReadPackId = delegate(uint packId)
+                                {
+                                    processRead(new Bcp.RetransmissionFinish(connectionId, packId));
+                                };
+                                readUnsignedVarint(stream, processReadPackId, exceptionHandler);
+                            };
+                            readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                            break;
+                        }
+                    case Bcp.Acknowledge.HeadByte:
+                        processRead(new Bcp.Acknowledge());
+                        break;
+                    case Bcp.Renew.HeadByte:
+                        processRead(new Bcp.Renew());
+                        break;
+                    case Bcp.Finish.HeadByte:
+                        processRead(new Bcp.Finish());
+                        break;
+                    case Bcp.ShutDown.HeadByte:
+                        processRead(new Bcp.ShutDown());
+                        break;
+                    case Bcp.HeartBeat.HeadByte:
+                        processRead(new Bcp.HeartBeat());
+                        break;
+                    default:
+                        throw new BcpException.UnknownHeadByte();
+                }
+            };
+            stream.BeginRead(headBuffer, 0, 1, asyncCallback, null);
         }
 
-        public static async Task<Bcp.ConnectionHead> ReadHead(Stream stream, CancellationToken cancellationToken)
+        public static void ReadHead(Stream stream, BcpDelegate.ProcessReadHead processReadHead, BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var sessionId = new byte[Bcp.NumBytesSessionId];
-            await readAll(stream, sessionId, 0, Bcp.NumBytesSessionId, cancellationToken);
-            var connectionId = await readUnisignedVarint(stream, cancellationToken);
-            return new Bcp.ConnectionHead(sessionId, connectionId);
+            ProcessReadAll processReadAll = delegate()
+            {
+                ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
+                {
+                    processReadHead(new Bcp.ConnectionHead(sessionId, connectionId));
+                };
+                readUnsignedVarint(stream, processReadConnectionId, null);
+            };
+            readAll(stream, sessionId, 0, Bcp.NumBytesSessionId, processReadAll, exceptionHandler);
         }
-
 
         public static void WriteHead(Stream stream, Bcp.ConnectionHead head)
         {

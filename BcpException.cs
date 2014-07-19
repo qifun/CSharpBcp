@@ -8,10 +8,18 @@ namespace Bcp
 {
     public class BcpException : Exception
     {
-        
+
         public class UnknownHeadByte : BcpException
         {
             public UnknownHeadByte()
+                : base()
+            {
+            }
+        }
+
+        public class SendingQueueIsFull : BcpException
+        {
+            public SendingQueueIsFull()
                 : base()
             {
             }
@@ -28,6 +36,14 @@ namespace Bcp
         public class VarintTooBig : BcpException
         {
             public VarintTooBig()
+                : base()
+            {
+            }
+        }
+
+        public class AlreadyReceivedFinish : BcpException
+        {
+            public AlreadyReceivedFinish()
                 : base()
             {
             }
