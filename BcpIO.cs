@@ -16,7 +16,8 @@ namespace Bcp
         private delegate void ProcessReadAll();
         
         static object writeLock = new object();
-
+        
+        // TODO check whether exception handler is null
         private static void readUnsignedVarint(Stream stream, ProcessReadVarint processReadVarint, BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var buffer = new byte[1];

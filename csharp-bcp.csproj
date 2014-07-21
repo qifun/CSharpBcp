@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Bcp</RootNamespace>
     <AssemblyName>csharp-bcp</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -41,6 +41,7 @@
     <Compile Include="BcpDelegate.cs" />
     <Compile Include="BcpException.cs" />
     <Compile Include="BcpIO.cs" />
+    <Compile Include="BcpServer.cs" />
     <Compile Include="BcpSession.cs" />
     <Compile Include="Bcp.cs" />
     <Compile Include="BcpUtil.cs" />

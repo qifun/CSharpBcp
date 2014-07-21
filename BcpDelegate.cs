@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Bcp
 {
-    class BcpDelegate
+    public class BcpDelegate
     {
         public delegate void ProcessRead(Bcp.IPacket packet);
 

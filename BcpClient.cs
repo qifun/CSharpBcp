@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 using System.Runtime.Remoting.Messaging;
+using System.Diagnostics;
 
 namespace Bcp
 {
-    class BcpClient : BcpSession
+    public abstract class BcpClient : BcpSession
     {
         private Timer reconnectTimer;
         private Timer idleTimer;
@@ -30,32 +31,39 @@ namespace Bcp
             }
         }
 
-        private class Connection : BcpSession.Connection
+        internal class Connection : BcpSession.Connection
         {
             public Timer busyTimer;
             public Bcp.ConnectionState connectionState = Bcp.ConnectionState.ConnectionIdle;
         }
 
-        internal override BcpClient.Connection newConnection()
+        internal override BcpSession.Connection newConnection()
         {
             return new BcpClient.Connection();
         }
 
-        protected abstract Stream connect();
+        public abstract Stream connect();
 
         private delegate Stream AsycConnectCaller();
 
         internal override void release()
         {
             isShutedDown = true;
-            reconnectTimer.Dispose();
-            reconnectTimer = null;
-            idleTimer.Dispose();
-            idleTimer = null;
+            if (reconnectTimer != null)
+            {
+                reconnectTimer.Dispose();
+                reconnectTimer = null;
+            }
+            if (idleTimer != null)
+            {
+                idleTimer.Dispose();
+                idleTimer = null;
+            }
         }
 
-        internal override void busy(BcpClient.Connection busyConnection)
+        internal override void busy(BcpSession.Connection busyConnection)
         {
+            var newBusyConnection = (BcpClient.Connection)busyConnection;
             lock (clientLock)
             {
                 if (reconnectTimer != null)
@@ -63,12 +71,12 @@ namespace Bcp
                     reconnectTimer.Dispose();
                     reconnectTimer = null;
                 }
-                var oldBusyTimer = busyConnection.busyTimer;
+                var oldBusyTimer = newBusyConnection.busyTimer;
                 if (oldBusyTimer == null)
                 {
                     var newBusyTimer = new Timer(busyEvent, busyConnection, 0, Bcp.BusyTimeoutMilliseconds);
-                    busyConnection.busyTimer = newBusyTimer;
-                    busyConnection.connectionState = Bcp.ConnectionState.ConnectionBusy;
+                    newBusyConnection.busyTimer = newBusyTimer;
+                    newBusyConnection.connectionState = Bcp.ConnectionState.ConnectionBusy;
                     bool isExistIdleConnection = false;
                     foreach (var connection in connections.Values)
                     {
@@ -87,7 +95,6 @@ namespace Bcp
                             idleTimer = null;
                         }
                     }
-
                 }
             }
         }
@@ -106,26 +113,28 @@ namespace Bcp
             }
         }
 
-        internal override void idle(BcpClient.Connection connection)
+        internal override void idle(BcpSession.Connection idleConnection)
         {
+            var newIdleConnection = (BcpClient.Connection)idleConnection;
             lock (clientLock)
             {
-                connection.busyTimer.Dispose();
-                connection.busyTimer = null;
-                connection.connectionState = Bcp.ConnectionState.ConnectionIdle;
+                newIdleConnection.busyTimer.Dispose();
+                newIdleConnection.busyTimer = null;
+                newIdleConnection.connectionState = Bcp.ConnectionState.ConnectionIdle;
                 checkFinishConnection();
             }
         }
 
-        internal override void close(BcpClient.Connection closeConnection)
+        internal override void close(BcpSession.Connection closeConnection)
         {
+            var newCloseConnection = (BcpClient.Connection)closeConnection;
             lock (clientLock)
             {
                 var connectionSize = connections.Count();
-                if (closeConnection.busyTimer != null)
+                if (newCloseConnection.busyTimer != null)
                 {
-                    closeConnection.busyTimer.Dispose();
-                    closeConnection.busyTimer = null;
+                    newCloseConnection.busyTimer.Dispose();
+                    newCloseConnection.busyTimer = null;
                 }
                 var isConnectionAllClosed = true;
                 foreach (var connection in connections.Values)
@@ -154,8 +163,9 @@ namespace Bcp
             {
                 stream = connect();
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Debug.WriteLine("Connect error: " + e.Message);
                 lock (clientLock)
                 {
                     startReconnectTimer();
@@ -198,25 +208,30 @@ namespace Bcp
 
         private void afterConnect(IAsyncResult ar)
         {
-            lock (clientLock)
+            Debug.WriteLine("Handle after connect!");
+            AsyncResult result = (AsyncResult)ar;
+            AsycConnectCaller caller = (AsycConnectCaller)result.AsyncDelegate;
+            uint connectionId = (uint)ar.AsyncState;
+            Stream stream = caller.EndInvoke(ar);
+            if (stream != null)
             {
-                AsyncResult result = (AsyncResult)ar;
-                AsycConnectCaller caller = (AsycConnectCaller)result.AsyncDelegate;
-                uint connectionId = (uint)ar.AsyncState;
-                Stream stream = caller.EndInvoke(ar);
-                if (stream != null)
+                Console.WriteLine("Connect Success!");
+                lock (clientLock)
                 {
-                    if (!isShutedDown)
+                    if (stream != null)
                     {
-                        BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, connectionId));
-                        addStream(connectionId, stream);
-                        isConnecting = false;
+                        if (!isShutedDown)
+                        {
+                            BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, connectionId));
+                            addStream(connectionId, stream);
+                            isConnecting = false;
+                        }
+                        else
+                        {
+                            stream.Dispose();
+                        }
+                        stream.Flush();
                     }
-                    else
-                    {
-                        stream.Dispose();
-                    }
-                    stream.Flush();
                 }
             }
         }

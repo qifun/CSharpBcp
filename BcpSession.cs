@@ -6,7 +6,7 @@ using System.IO;
 
 namespace Bcp
 {
-    abstract class BcpSession
+    public abstract class BcpSession
     {
 
         private static bool between(uint low, uint high, uint test)
@@ -27,7 +27,7 @@ namespace Bcp
 
         private sealed class IDSetIsFullException : Exception { }
 
-        private sealed class IDSet : HashSet<uint>
+        internal sealed class IDSet : HashSet<uint>
         {
 
             private const uint MaxUnconfirmedIds = 1024;
@@ -91,7 +91,7 @@ namespace Bcp
             public bool IsFinishSent = false;
             public bool IsShutedDown = false;
             public uint NumDataReceived = 0;
-            public IDSet ReceiveIDSet;
+            internal IDSet ReceiveIDSet = new IDSet();
             public uint NumDataSent = 0;
             public uint NumAcknowledgeReceivedForData = 0;
             public Queue<Bcp.IAcknowledgeRequired> UnconfirmedPackets = new Queue<Bcp.IAcknowledgeRequired>();
@@ -109,17 +109,17 @@ namespace Bcp
             return new SortedDictionary<long, HashSet<Connection>>(new BcpUtil.DescendingComparer<long>());
         }
 
-        protected abstract void unavailable();
+        public abstract void unavailable();
 
-        protected abstract void available();
+        public abstract void available();
 
-        protected abstract void shutedDown();
+        public abstract void shutedDown();
 
-        protected abstract void interrupted();
+        public abstract void interrupted();
 
         internal abstract void release();
 
-        protected abstract void received(IList<ArraySegment<Byte>> buffers);
+        public abstract void received(IList<ArraySegment<Byte>> buffers);
 
         private uint lastConnectionId = 0;
 
@@ -131,7 +131,7 @@ namespace Bcp
 
         private SortedDictionary<long, HashSet<Connection>> sendingConnectionQueue = newSendingConnectionQueue();
 
-        private Queue<Bcp.IAcknowledgeRequired> packQueue;
+        private Queue<Bcp.IAcknowledgeRequired> packQueue = new Queue<Bcp.IAcknowledgeRequired>();
 
         internal abstract void busy(Connection connection);
 
@@ -494,7 +494,7 @@ namespace Bcp
                                         Connection c = newConnection();
                                         connections.Add(id, c);
                                     }
-                                    dataReceived(dataConnectionId, connections.Last().Value, packId, data)
+                                    dataReceived(dataConnectionId, connections.Last().Value, packId, data);
                                 }
                                 else
                                 {
