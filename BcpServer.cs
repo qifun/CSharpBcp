@@ -17,7 +17,7 @@ namespace Bcp
         {
         }
 
-        public abstract class Session : BcpSession
+        protected abstract class Session : BcpSession
         {
             private byte[] sessionId = new byte[Bcp.NumBytesSessionId];
 
@@ -29,7 +29,7 @@ namespace Bcp
             {
             }
 
-            override internal BcpSession.Connection newConnection()
+            internal override BcpSession.Connection newConnection()
             {
                 return new BcpServer.Connection();
             }
@@ -51,7 +51,7 @@ namespace Bcp
             {
             }
 
-            public abstract void accepted();
+            protected abstract void accepted();
 
             internal void internalAccepted()
             {
@@ -59,9 +59,9 @@ namespace Bcp
             }
         }
 
-        public abstract BcpServer.Session newSession(byte[] sessionId);
+        protected abstract BcpServer.Session newSession(byte[] sessionId);
 
-        public void addIncomingSocket(Stream stream)
+        protected void addIncomingSocket(Stream stream)
         {
             BcpDelegate.ProcessReadHead processReadHead = delegate(Bcp.ConnectionHead connectionHead)
             {

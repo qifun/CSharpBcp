@@ -84,19 +84,19 @@ namespace Bcp
 
         }
 
-        public class Connection
+        internal class Connection
         {
-            public Stream stream;
-            public uint FinishID;
-            public bool IsFinishIDReceived = false;
-            public bool IsFinishSent = false;
-            public bool IsShutedDown = false;
-            public uint NumDataReceived = 0;
+            internal Stream stream;
+            internal uint FinishID;
+            internal bool IsFinishIDReceived = false;
+            internal bool IsFinishSent = false;
+            internal bool IsShutedDown = false;
+            internal uint NumDataReceived = 0;
             internal IDSet ReceiveIDSet = new IDSet();
-            public uint NumDataSent = 0;
-            public uint NumAcknowledgeReceivedForData = 0;
-            public Queue<Bcp.IAcknowledgeRequired> UnconfirmedPackets = new Queue<Bcp.IAcknowledgeRequired>();
-            public Timer HeartBeatTimer;
+            internal uint NumDataSent = 0;
+            internal uint NumAcknowledgeReceivedForData = 0;
+            internal Queue<Bcp.IAcknowledgeRequired> UnconfirmedPackets = new Queue<Bcp.IAcknowledgeRequired>();
+            internal Timer HeartBeatTimer;
         }
 
         private System.Object sessionLock = new System.Object();
@@ -110,21 +110,21 @@ namespace Bcp
             return new SortedDictionary<long, HashSet<Connection>>(new BcpUtil.DescendingComparer<long>());
         }
 
-        public abstract void unavailable();
+        protected abstract void unavailable();
 
-        public abstract void available();
+        protected abstract void available();
 
-        public abstract void shutedDown();
+        protected abstract void shutedDown();
 
-        public abstract void interrupted();
+        protected abstract void interrupted();
 
         internal abstract void release();
 
-        public abstract void received(IList<ArraySegment<Byte>> buffers);
+        protected abstract void received(IList<ArraySegment<Byte>> buffers);
 
         private uint lastConnectionId = 0;
 
-        protected Dictionary<uint, Connection> connections = new Dictionary<uint, Connection>();
+        internal Dictionary<uint, Connection> connections = new Dictionary<uint, Connection>();
 
         private enum SessionState { Available, Unavailable }
 

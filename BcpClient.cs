@@ -42,7 +42,7 @@ namespace Bcp
             return new BcpClient.Connection();
         }
 
-        public abstract Stream connect();
+        protected abstract Stream connect();
 
         private delegate Stream AsycConnectCaller();
 

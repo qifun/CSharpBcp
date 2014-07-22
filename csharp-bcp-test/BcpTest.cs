@@ -62,12 +62,12 @@ namespace Bcp
 
         class PingPongServer : TestServer
         {
-            public override BcpServer.Session newSession(byte[] sessionId)
+            protected override BcpServer.Session newSession(byte[] sessionId)
             {
                 return new Session(sessionId);
             }
 
-            class Session : BcpServer.Session
+            protected class Session : BcpServer.Session
             {
                 public Session()
                 {
@@ -77,27 +77,27 @@ namespace Bcp
                 {
                 }
 
-                public override void accepted()
+                protected override void accepted()
                 {
                 }
 
-                public override void unavailable()
+                protected override void unavailable()
                 {
                 }
 
-                public override void available()
+                protected override void available()
                 {
                 }
 
-                public override void shutedDown()
+                protected override void shutedDown()
                 {
                 }
 
-                public override void interrupted()
+                protected override void interrupted()
                 {
                 }
 
-                public override void received(IList<ArraySegment<byte>> buffers)
+                protected override void received(IList<ArraySegment<byte>> buffers)
                 {
                     lock (testLock)
                     {
@@ -126,7 +126,7 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            public override Stream connect()
+            protected override Stream connect()
             {
                 try
                 {
@@ -148,23 +148,23 @@ namespace Bcp
                 }
             }
 
-            public override void unavailable()
+            protected override void unavailable()
             {
             }
 
-            public override void available()
+            protected override void available()
             {
             }
 
-            public override void shutedDown()
+            protected override void shutedDown()
             {
             }
 
-            public override void interrupted()
+            protected override void interrupted()
             {
             }
 
-            public override void received(IList<ArraySegment<byte>> buffers)
+            protected override void received(IList<ArraySegment<byte>> buffers)
             {
                 lock(testLock)
                 {
