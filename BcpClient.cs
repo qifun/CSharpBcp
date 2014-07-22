@@ -118,8 +118,11 @@ namespace Bcp
             var newIdleConnection = (BcpClient.Connection)idleConnection;
             lock (clientLock)
             {
-                newIdleConnection.busyTimer.Dispose();
-                newIdleConnection.busyTimer = null;
+                if (newIdleConnection.busyTimer != null)
+                {
+                    newIdleConnection.busyTimer.Dispose();
+                    newIdleConnection.busyTimer = null;
+                }
                 newIdleConnection.connectionState = Bcp.ConnectionState.ConnectionIdle;
                 checkFinishConnection();
             }
@@ -215,7 +218,7 @@ namespace Bcp
             Stream stream = caller.EndInvoke(ar);
             if (stream != null)
             {
-                Console.WriteLine("Connect Success!");
+                Debug.WriteLine("Connect Success!");
                 lock (clientLock)
                 {
                     if (stream != null)
@@ -223,6 +226,7 @@ namespace Bcp
                         if (!isShutedDown)
                         {
                             BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, connectionId));
+                            Debug.WriteLine("Client add stream!");
                             addStream(connectionId, stream);
                             isConnecting = false;
                         }

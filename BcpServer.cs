@@ -21,6 +21,10 @@ namespace Bcp
         {
             private byte[] sessionId = new byte[Bcp.NumBytesSessionId];
 
+            public Session()
+            {
+            }
+
             public Session(byte sessionId)
             {
             }
@@ -47,7 +51,7 @@ namespace Bcp
             {
             }
 
-            protected abstract void accepted();
+            public abstract void accepted();
 
             internal void internalAccepted()
             {
@@ -63,6 +67,7 @@ namespace Bcp
             {
                 var sessionId = connectionHead.SessionId;
                 var connectionId = connectionHead.ConnectionId;
+                Debug.WriteLine("BcpServer add incomming socket, sessionId: " + sessionId + ", connectionId: " + connectionId);
                 lock (serverLock)
                 {
                     BcpServer.Session session;

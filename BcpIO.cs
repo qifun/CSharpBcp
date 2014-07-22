@@ -138,10 +138,16 @@ namespace Bcp
         {
             lock (writeLock)
             {
-                Action<Stream, Bcp.IPacket> writeCallback;
-                var isSuccess = writeCallbacks.TryGetValue(packet.GetType(), out writeCallback);
-                Debug.Assert(isSuccess);
-                writeCallback(stream, packet);
+                try
+                {
+                    Action<Stream, Bcp.IPacket> writeCallback;
+                    var isSuccess = writeCallbacks.TryGetValue(packet.GetType(), out writeCallback);
+                    Debug.Assert(isSuccess);
+                    writeCallback(stream, packet);
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -183,88 +189,95 @@ namespace Bcp
             AsyncCallback asyncCallback = null;
             asyncCallback = asyncResult =>
             {
-                int numBytesRead = stream.EndRead(asyncResult);
-                if (numBytesRead != 1)
+                try
                 {
-                    throw new EndOfStreamException();
-                }
-                switch (headBuffer[0])
-                {
-                    case Bcp.Data.HeadByte:
-                        {
-                            ProcessReadVarint processReadLength = delegate(uint length)
+                    int numBytesRead = stream.EndRead(asyncResult);
+                    if (numBytesRead != 1)
+                    {
+                        throw new EndOfStreamException();
+                    }
+                    switch (headBuffer[0])
+                    {
+                        case Bcp.Data.HeadByte:
                             {
-                                if (length > Bcp.MaxDataSize)
+                                ProcessReadVarint processReadLength = delegate(uint length)
                                 {
-                                    throw new BcpException.DataTooBig();
-                                }
-                                var buffer = new byte[length];
-                                ProcessReadAll processReadAll = delegate()
-                                {
-                                    processRead(new Bcp.Data(new[] { (new ArraySegment<byte>(buffer)) }));
-                                };
-                                readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
-                            };
-                            readUnsignedVarint(stream, processReadLength, exceptionHandler);
-                            break;
-                        }
-                    case Bcp.RetransmissionData.HeadByte:
-                        {
-                            ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
-                            {
-                                ProcessReadVarint processReadPackId = delegate(uint packId)
-                                {
-                                    ProcessReadVarint processReadLength = delegate(uint length)
+                                    if (length > Bcp.MaxDataSize)
                                     {
-                                        if (length > Bcp.MaxDataSize)
-                                        {
-                                            throw new BcpException.DataTooBig();
-                                        }
-                                        var buffer = new byte[length];
-                                        ProcessReadAll processReadAll = delegate()
-                                        {
-                                            processRead(new Bcp.RetransmissionData(connectionId, packId, new[] { (new ArraySegment<byte>(buffer)) }));
-                                        };
-                                        readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
-
+                                        throw new BcpException.DataTooBig();
+                                    }
+                                    var buffer = new byte[length];
+                                    ProcessReadAll processReadAll = delegate()
+                                    {
+                                        processRead(new Bcp.Data(new[] { (new ArraySegment<byte>(buffer)) }));
                                     };
-                                    readUnsignedVarint(stream, processReadLength, exceptionHandler);
+                                    readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
                                 };
-                                readUnsignedVarint(stream, processReadPackId, exceptionHandler);
-                            };
-                            readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
-                            break;
-                        }
-                    case Bcp.RetransmissionFinish.HeadByte:
-                        {
-                            ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
+                                readUnsignedVarint(stream, processReadLength, exceptionHandler);
+                                break;
+                            }
+                        case Bcp.RetransmissionData.HeadByte:
                             {
-                                ProcessReadVarint processReadPackId = delegate(uint packId)
+                                ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
                                 {
-                                    processRead(new Bcp.RetransmissionFinish(connectionId, packId));
+                                    ProcessReadVarint processReadPackId = delegate(uint packId)
+                                    {
+                                        ProcessReadVarint processReadLength = delegate(uint length)
+                                        {
+                                            if (length > Bcp.MaxDataSize)
+                                            {
+                                                throw new BcpException.DataTooBig();
+                                            }
+                                            var buffer = new byte[length];
+                                            ProcessReadAll processReadAll = delegate()
+                                            {
+                                                processRead(new Bcp.RetransmissionData(connectionId, packId, new[] { (new ArraySegment<byte>(buffer)) }));
+                                            };
+                                            readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
+
+                                        };
+                                        readUnsignedVarint(stream, processReadLength, exceptionHandler);
+                                    };
+                                    readUnsignedVarint(stream, processReadPackId, exceptionHandler);
                                 };
-                                readUnsignedVarint(stream, processReadPackId, exceptionHandler);
-                            };
-                            readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                                readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                                break;
+                            }
+                        case Bcp.RetransmissionFinish.HeadByte:
+                            {
+                                ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
+                                {
+                                    ProcessReadVarint processReadPackId = delegate(uint packId)
+                                    {
+                                        processRead(new Bcp.RetransmissionFinish(connectionId, packId));
+                                    };
+                                    readUnsignedVarint(stream, processReadPackId, exceptionHandler);
+                                };
+                                readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                                break;
+                            }
+                        case Bcp.Acknowledge.HeadByte:
+                            processRead(new Bcp.Acknowledge());
                             break;
-                        }
-                    case Bcp.Acknowledge.HeadByte:
-                        processRead(new Bcp.Acknowledge());
-                        break;
-                    case Bcp.Renew.HeadByte:
-                        processRead(new Bcp.Renew());
-                        break;
-                    case Bcp.Finish.HeadByte:
-                        processRead(new Bcp.Finish());
-                        break;
-                    case Bcp.ShutDown.HeadByte:
-                        processRead(new Bcp.ShutDown());
-                        break;
-                    case Bcp.HeartBeat.HeadByte:
-                        processRead(new Bcp.HeartBeat());
-                        break;
-                    default:
-                        throw new BcpException.UnknownHeadByte();
+                        case Bcp.Renew.HeadByte:
+                            processRead(new Bcp.Renew());
+                            break;
+                        case Bcp.Finish.HeadByte:
+                            processRead(new Bcp.Finish());
+                            break;
+                        case Bcp.ShutDown.HeadByte:
+                            processRead(new Bcp.ShutDown());
+                            break;
+                        case Bcp.HeartBeat.HeadByte:
+                            processRead(new Bcp.HeartBeat());
+                            break;
+                        default:
+                            throw new BcpException.UnknownHeadByte();
+                    }
+                }
+                catch(Exception e)
+                {
+                    exceptionHandler(e);
                 }
             };
             stream.BeginRead(headBuffer, 0, 1, asyncCallback, null);
