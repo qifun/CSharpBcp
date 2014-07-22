@@ -735,7 +735,7 @@ namespace Bcp
             interrupted();
         }
 
-        public void interrupt()
+        public void Interrupt()
         {
             lock (sessionLock)
             {
@@ -743,7 +743,7 @@ namespace Bcp
             }
         }
 
-        public void shutDown()
+        public void ShutDown()
         {
             lock (sessionLock)
             {
@@ -751,7 +751,7 @@ namespace Bcp
             }
         }
 
-        public void send(IList<ArraySegment<Byte>> buffer)
+        public void Send(IList<ArraySegment<Byte>> buffer)
         {
             lock (sessionLock)
             {

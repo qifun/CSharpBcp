@@ -108,11 +108,10 @@ namespace Bcp
                         IList<ArraySegment<byte>> sendBuffer = new List<ArraySegment<byte>>();
                         ArraySegment<byte> pingArraySegment = new ArraySegment<byte>(pong, 0, pong.Length);
                         sendBuffer.Add(pingArraySegment);
-                        send(sendBuffer);
+                        Send(sendBuffer);
                         Monitor.Pulse(testLock);
                     }
                 }
-
             }
         }
 
@@ -171,7 +170,6 @@ namespace Bcp
                     ArraySegment<byte> pong = buffers[0];
                     clientResult = UTF8Encoding.Default.GetString(pong.Array);
                     Monitor.Pulse(testLock);
-
                 }
             }
 
@@ -179,14 +177,14 @@ namespace Bcp
 
         [TestMethod]
         public void PingPong()
-        {            
+        {
             var server = new PingPongServer();
             var client = new PingPongClint(server.LocalEndPoint);
             byte[] ping = new UTF8Encoding(true).GetBytes("ping");
             IList<ArraySegment<byte>> sendBuffer = new List<ArraySegment<byte>>();
             ArraySegment<byte> pingArraySegment = new ArraySegment<byte>(ping, 0, ping.Length);
             sendBuffer.Add(pingArraySegment);
-            client.send(sendBuffer);
+            client.Send(sendBuffer);
             lock (testLock)
             {
                 while (serverResult == null || clientResult == null)
@@ -196,8 +194,17 @@ namespace Bcp
             }
             Assert.AreEqual(serverResult, "ping");
             Assert.AreEqual(clientResult, "pong");
-            client.shutDown();
+            client.ShutDown();
             server.clear();
+        }
+    }
+
+    [TestClass]
+    public class CloseConnectionTest
+    {
+        [TestMethod]
+        public void CloseConnection()
+        {
         }
     }
 }
