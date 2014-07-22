@@ -287,7 +287,7 @@ namespace Bcp
                     {
                         increaseConnection();
                         reconnectTimer = null;
-                    }
+                    } 
                 };
                 var newBusyTimer = new Timer(busyTimerCallback, null, 0, Bcp.BusyTimeoutMilliseconds);
                 reconnectTimer = newBusyTimer;

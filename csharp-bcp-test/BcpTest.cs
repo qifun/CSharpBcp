@@ -64,16 +64,16 @@ namespace Bcp
         {
             protected override BcpServer.Session newSession(byte[] sessionId)
             {
-                return new Session(sessionId);
+                return new PingPongSession(sessionId);
             }
 
-            protected class Session : BcpServer.Session
+            protected class PingPongSession : BcpServer.Session
             {
-                public Session()
+                public PingPongSession()
                 {
                 }
 
-                public Session(byte[] sesssionId)
+                public PingPongSession(byte[] sesssionId)
                 {
                 }
 
@@ -209,16 +209,16 @@ namespace Bcp
         {
             protected override BcpServer.Session newSession(byte[] sessionId)
             {
-                return new Session(sessionId);
+                return new CloseConnectionSession(sessionId);
             }
 
-            protected class Session : BcpServer.Session
+            protected class CloseConnectionSession : BcpServer.Session
             {
-                public Session()
+                public CloseConnectionSession()
                 {
                 }
 
-                public Session(byte[] sesssionId)
+                public CloseConnectionSession(byte[] sesssionId)
                 {
                 }
 
