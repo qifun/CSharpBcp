@@ -38,7 +38,14 @@ namespace Bcp
                     {
                         result |= ((b & 0x7f) << i);
                         i += 7;
-                        stream.BeginRead(buffer, 0, 1, asyncCallback, null);
+                        try
+                        {
+                            stream.BeginRead(buffer, 0, 1, asyncCallback, null);
+                        }
+                        catch(Exception e)
+                        {
+                            exceptionHandler(e);
+                        }
                     }
                     else
                     {
@@ -51,7 +58,14 @@ namespace Bcp
                     exceptionHandler(new BcpException.VarintTooBig());
                 }
             };
-            stream.BeginRead(buffer, 0, 1, asyncCallback, null);
+            try
+            {
+                stream.BeginRead(buffer, 0, 1, asyncCallback, null);
+            }
+            catch(Exception e)
+            {
+                exceptionHandler(e);
+            }
         }
 
         private static void writeUnsignedVarint(Stream stream, uint value)
@@ -173,14 +187,28 @@ namespace Bcp
                 }
                 if (offset < count)
                 {
-                    stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                    try
+                    {
+                        stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                    }
+                    catch(Exception e)
+                    {
+                        exceptionHandler(e);
+                    }
                 }
                 else
                 {
                     processReadAll();
                 }
             };
-            stream.BeginRead(buffer, offset, count, asyncCallback, null);
+            try
+            {
+                stream.BeginRead(buffer, offset, count, asyncCallback, null);
+            }
+            catch(Exception e)
+            {
+                exceptionHandler(e);
+            }
         }
 
         public static void Read(Stream stream, BcpDelegate.ProcessRead processRead, BcpDelegate.ExceptionHandler exceptionHandler)
@@ -280,7 +308,14 @@ namespace Bcp
                     exceptionHandler(e);
                 }
             };
-            stream.BeginRead(headBuffer, 0, 1, asyncCallback, null);
+            try
+            {
+                stream.BeginRead(headBuffer, 0, 1, asyncCallback, null);
+            }
+            catch(Exception e)
+            {
+                exceptionHandler(e);
+            }
         }
 
         public static void ReadHead(Stream stream, BcpDelegate.ProcessReadHead processReadHead, BcpDelegate.ExceptionHandler exceptionHandler)

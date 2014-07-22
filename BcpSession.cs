@@ -218,6 +218,7 @@ namespace Bcp
                 case SessionState.Unavailable:
                     break;
             }
+            Debug.WriteLine("After remove open connetion, sendConnectionQueue count: " + sendingConnectionQueue.Count());
         }
 
         private void trySend(Bcp.IPacket newPack)
@@ -273,6 +274,7 @@ namespace Bcp
                         BcpIO.Write(stream, newPack);
                         stream.Flush();
                         connection.UnconfirmedPackets.Enqueue(newPack);
+                        Debug.WriteLine(connection.HeartBeatTimer == null);
                         resetHeartBeatTimer(connection);
                         long currentTimeMillis = Environment.TickCount;
                         HashSet<Connection> currentOpenConnections;
@@ -697,8 +699,10 @@ namespace Bcp
         {
             if (!connection.IsShutedDown)
             {
+                Debug.WriteLine(connection.HeartBeatTimer == null);
                 var oldTimer = connection.HeartBeatTimer;
                 oldTimer.Dispose();
+                oldTimer = null;
                 var newHeartBeatTimer = new Timer(heartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
                 connection.HeartBeatTimer = newHeartBeatTimer;
             }
@@ -711,7 +715,13 @@ namespace Bcp
             if (connection.stream != null)
             {
                 BcpIO.Write(connection.stream, new Bcp.HeartBeat());
-                connection.stream.Flush();
+                try
+                {
+                    connection.stream.Flush();
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -724,6 +734,7 @@ namespace Bcp
                 {
                     var oldHeartBeatTimer = connection.HeartBeatTimer;
                     oldHeartBeatTimer.Dispose();
+                    connection.HeartBeatTimer = null;
                     connection.stream.Dispose();
                     connection.stream = null;
                 }
@@ -761,52 +772,55 @@ namespace Bcp
 
         internal void addStream(uint connectionId, Stream stream)
         {
-            uint oldLastConnectionId = lastConnectionId;
-            if (connections.Count >= Bcp.MaxConnectionsPerSession ||
-                activeConnectionNum() >= Bcp.MaxActiveConnectionsPerSession)
+            lock (sessionLock)
             {
-                stream.Dispose();
-            }
-            if (connectionId < oldLastConnectionId ||
-                connectionId - oldLastConnectionId + connections.Count >= Bcp.MaxConnectionsPerSession)
-            {
-                internalInterrupt();
-            }
-            else
-            {
-                if (connectionId > oldLastConnectionId + 1)
-                {
-                    for (uint id = oldLastConnectionId + 1; id < connectionId; ++id)
-                    {
-                        if (!connections.ContainsKey(id))
-                        {
-                            Connection c = newConnection();
-                            connections.Add(id, c);
-                        }
-                    }
-                }
-                Connection connection;
-                if (connections.TryGetValue(connectionId, out connection))
-                {
-                }
-                else
-                {
-                    connection = newConnection();
-                }
-                lastConnectionId = connectionId;
-                if (connection.stream == null)
-                {
-                    connection.stream = stream;
-                    addOpenConnection(connection);
-                    startReceive(connectionId, connection);
-                    var newHeartBeatTimer = new Timer(heartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
-                    connection.HeartBeatTimer = newHeartBeatTimer;
-                }
-                else
+                uint oldLastConnectionId = lastConnectionId;
+                if (connections.Count >= Bcp.MaxConnectionsPerSession ||
+                    activeConnectionNum() >= Bcp.MaxActiveConnectionsPerSession)
                 {
                     stream.Dispose();
                 }
-            }
+                if (connectionId < oldLastConnectionId ||
+                    connectionId - oldLastConnectionId + connections.Count >= Bcp.MaxConnectionsPerSession)
+                {
+                    internalInterrupt();
+                }
+                else
+                {
+                    if (connectionId > oldLastConnectionId + 1)
+                    {
+                        for (uint id = oldLastConnectionId + 1; id < connectionId; ++id)
+                        {
+                            if (!connections.ContainsKey(id))
+                            {
+                                Connection c = newConnection();
+                                connections.Add(id, c);
+                            }
+                        }
+                    }
+                    Connection connection;
+                    if (connections.TryGetValue(connectionId, out connection))
+                    {
+                    }
+                    else
+                    {
+                        connection = newConnection();
+                    }
+                    lastConnectionId = connectionId;
+                    if (connection.stream == null)
+                    {
+                        connection.stream = stream;
+                        addOpenConnection(connection);                  
+                        var newHeartBeatTimer = new Timer(heartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
+                        connection.HeartBeatTimer = newHeartBeatTimer;
+                        startReceive(connectionId, connection);
+                    }
+                    else
+                    {
+                        stream.Dispose();
+                    }
+                }
+           }
             Debug.WriteLine("After add stream sendingQueue count: " + sendingConnectionQueue.Count());
         }
 

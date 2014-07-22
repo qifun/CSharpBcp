@@ -226,8 +226,8 @@ namespace Bcp
                         if (!isShutedDown)
                         {
                             BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, connectionId));
-                            Debug.WriteLine("Client add stream!");
                             addStream(connectionId, stream);
+                            Debug.WriteLine("Client added stream!");
                             isConnecting = false;
                         }
                         else
