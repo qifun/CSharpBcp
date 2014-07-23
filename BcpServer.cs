@@ -81,11 +81,12 @@ namespace Bcp
                         session.internalAccepted();
                     }
                     session.addStream(connectionId, stream);
+                    Debug.WriteLine("Server added stream!");
                 }
             };
             BcpDelegate.ExceptionHandler exceptionHandler = delegate(Exception e)
             {
-                Debug.WriteLine(e.Message);
+                Debug.WriteLine("BcpServer add incomming stream exception: " + e.Message);
             };
             BcpIO.ReadHead(stream, processReadHead, exceptionHandler);
         }

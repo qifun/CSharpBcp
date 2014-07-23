@@ -14,9 +14,7 @@ namespace Bcp
         private delegate void ProcessReadVarint(uint result);
 
         private delegate void ProcessReadAll();
-        
-        static object writeLock = new object();
-        
+
         // TODO check whether exception handler is null
         private static void readUnsignedVarint(Stream stream, ProcessReadVarint processReadVarint, BcpDelegate.ExceptionHandler exceptionHandler)
         {
@@ -42,7 +40,7 @@ namespace Bcp
                         {
                             stream.BeginRead(buffer, 0, 1, asyncCallback, null);
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             exceptionHandler(e);
                         }
@@ -62,7 +60,7 @@ namespace Bcp
             {
                 stream.BeginRead(buffer, 0, 1, asyncCallback, null);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 exceptionHandler(e);
             }
@@ -150,27 +148,24 @@ namespace Bcp
 
         public static void Write(Stream stream, Bcp.IPacket packet)
         {
-            lock (writeLock)
+            try
             {
-                try
-                {
-                    Action<Stream, Bcp.IPacket> writeCallback;
-                    var isSuccess = writeCallbacks.TryGetValue(packet.GetType(), out writeCallback);
-                    Debug.Assert(isSuccess);
-                    writeCallback(stream, packet);
-                }
-                catch
-                {
-                }
+                Action<Stream, Bcp.IPacket> writeCallback;
+                var isSuccess = writeCallbacks.TryGetValue(packet.GetType(), out writeCallback);
+                Debug.Assert(isSuccess);
+                writeCallback(stream, packet);
+            }
+            catch
+            {
             }
         }
 
         private static void readAll(
-            Stream stream, 
-            byte[] buffer, 
-            int offset, 
-            int count, 
-            ProcessReadAll processReadAll, 
+            Stream stream,
+            byte[] buffer,
+            int offset,
+            int count,
+            ProcessReadAll processReadAll,
             BcpDelegate.ExceptionHandler exceptionHandler)
         {
             AsyncCallback asyncCallback = null;
@@ -184,28 +179,29 @@ namespace Bcp
                 else
                 {
                     offset += numBytesRead;
-                }
-                if (offset < count)
-                {
-                    try
+
+                    if (offset < count)
                     {
-                        stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                        try
+                        {
+                            stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                        }
+                        catch (Exception e)
+                        {
+                            exceptionHandler(e);
+                        }
                     }
-                    catch(Exception e)
+                    else
                     {
-                        exceptionHandler(e);
+                        processReadAll();
                     }
-                }
-                else
-                {
-                    processReadAll();
                 }
             };
             try
             {
                 stream.BeginRead(buffer, offset, count, asyncCallback, null);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 exceptionHandler(e);
             }
@@ -303,7 +299,7 @@ namespace Bcp
                             throw new BcpException.UnknownHeadByte();
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     exceptionHandler(e);
                 }
@@ -312,7 +308,7 @@ namespace Bcp
             {
                 stream.BeginRead(headBuffer, 0, 1, asyncCallback, null);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 exceptionHandler(e);
             }
@@ -334,8 +330,14 @@ namespace Bcp
 
         public static void WriteHead(Stream stream, Bcp.ConnectionHead head)
         {
-            stream.Write(head.SessionId, 0, Bcp.NumBytesSessionId);
-            writeUnsignedVarint(stream, head.ConnectionId);
+            try
+            {
+                stream.Write(head.SessionId, 0, Bcp.NumBytesSessionId);
+                writeUnsignedVarint(stream, head.ConnectionId);
+            }
+            catch
+            {
+            }
         }
     }
 }

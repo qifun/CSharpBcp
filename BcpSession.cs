@@ -99,7 +99,7 @@ namespace Bcp
             internal Timer HeartBeatTimer;
         }
 
-        private System.Object sessionLock = new System.Object();
+        protected Object sessionLock = new Object();
 
         private long allConfirmed = long.MaxValue;
 
@@ -274,7 +274,6 @@ namespace Bcp
                         BcpIO.Write(stream, newPack);
                         stream.Flush();
                         connection.UnconfirmedPackets.Enqueue(newPack);
-                        Debug.WriteLine(connection.HeartBeatTimer == null);
                         resetHeartBeatTimer(connection);
                         long currentTimeMillis = Environment.TickCount;
                         HashSet<Connection> currentOpenConnections;
@@ -466,11 +465,11 @@ namespace Bcp
                 else if (packet is Bcp.Data)
                 {
                     Debug.WriteLine("Receive data: " + packet);
-                    BcpIO.Write(connection.stream, new Bcp.Acknowledge());
-                    var data = (Bcp.Data)packet;
-                    var buffer = data.Buffers;
                     lock (sessionLock)
                     {
+                        BcpIO.Write(connection.stream, new Bcp.Acknowledge());
+                        var data = (Bcp.Data)packet;
+                        var buffer = data.Buffers;
                         resetHeartBeatTimer(connection);
                         var packId = connection.NumDataReceived;
                         connection.NumDataReceived = packId + 1;
@@ -482,13 +481,14 @@ namespace Bcp
                 else if (packet is Bcp.RetransmissionData)
                 {
                     Debug.WriteLine("Receive retransmission data: " + packet);
-                    BcpIO.Write(connection.stream, new Bcp.Acknowledge());
-                    var retransmissionData = (Bcp.RetransmissionData)packet;
-                    var dataConnectionId = retransmissionData.ConnectionId;
-                    var packId = retransmissionData.PackId;
-                    var data = retransmissionData.Buffers;
                     lock (sessionLock)
                     {
+                        BcpIO.Write(connection.stream, new Bcp.Acknowledge());
+                        var retransmissionData = (Bcp.RetransmissionData)packet;
+                        var dataConnectionId = retransmissionData.ConnectionId;
+                        var packId = retransmissionData.PackId;
+                        var data = retransmissionData.Buffers;
+
                         resetHeartBeatTimer(connection);
                         Connection dataConnection;
                         if (connections.TryGetValue(dataConnectionId, out dataConnection))
@@ -580,9 +580,9 @@ namespace Bcp
                 else if (packet is Bcp.Finish)
                 {
                     Debug.WriteLine("receive finish, connectionId: ", connectionId);
-                    BcpIO.Write(connection.stream, new Bcp.Acknowledge());
                     lock (sessionLock)
                     {
+                        BcpIO.Write(connection.stream, new Bcp.Acknowledge());
                         if (!connection.IsFinishSent)
                         {
                             enqueueFinish(connection);
@@ -597,10 +597,10 @@ namespace Bcp
                 else if (packet is Bcp.RetransmissionFinish)
                 {
                     Debug.WriteLine("Receive retransmission finish: " + packet);
-                    BcpIO.Write(connection.stream, new Bcp.Acknowledge());
-                    var retransmissionFinishPack = (Bcp.RetransmissionFinish)packet;
                     lock (sessionLock)
                     {
+                        BcpIO.Write(connection.stream, new Bcp.Acknowledge());
+                        var retransmissionFinishPack = (Bcp.RetransmissionFinish)packet;
                         var finishConnectionId = retransmissionFinishPack.ConnectionId;
                         var packId = retransmissionFinishPack.PackId;
                         resetHeartBeatTimer(connection);
@@ -699,7 +699,6 @@ namespace Bcp
         {
             if (!connection.IsShutedDown)
             {
-                Debug.WriteLine(connection.HeartBeatTimer == null);
                 var oldTimer = connection.HeartBeatTimer;
                 oldTimer.Dispose();
                 oldTimer = null;
@@ -712,15 +711,18 @@ namespace Bcp
         {
             Debug.WriteLine("Sending heart beat!");
             var connection = (Connection)source;
-            if (connection.stream != null)
+            lock (sessionLock)
             {
-                BcpIO.Write(connection.stream, new Bcp.HeartBeat());
-                try
+                if (connection.stream != null)
                 {
-                    connection.stream.Flush();
-                }
-                catch
-                {
+                    BcpIO.Write(connection.stream, new Bcp.HeartBeat());
+                    try
+                    {
+                        connection.stream.Flush();
+                    }
+                    catch
+                    {
+                    }
                 }
             }
         }
@@ -810,7 +812,7 @@ namespace Bcp
                     if (connection.stream == null)
                     {
                         connection.stream = stream;
-                        addOpenConnection(connection);                  
+                        addOpenConnection(connection);
                         var newHeartBeatTimer = new Timer(heartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
                         connection.HeartBeatTimer = newHeartBeatTimer;
                         startReceive(connectionId, connection);
@@ -820,7 +822,7 @@ namespace Bcp
                         stream.Dispose();
                     }
                 }
-           }
+            }
             Debug.WriteLine("After add stream sendingQueue count: " + sendingConnectionQueue.Count());
         }
 
