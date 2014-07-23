@@ -31,13 +31,13 @@ namespace Bcp
             }
         }
 
-        internal class Connection : BcpSession.Connection
+        new internal class Connection : BcpSession.Connection
         {
             public Timer busyTimer;
             public Bcp.ConnectionState connectionState = Bcp.ConnectionState.ConnectionIdle;
         }
 
-        internal override BcpSession.Connection newConnection()
+        internal override sealed BcpSession.Connection newConnection()
         {
             return new BcpClient.Connection();
         }
@@ -46,7 +46,7 @@ namespace Bcp
 
         private delegate Stream AsycConnectCaller();
 
-        internal override void release()
+        internal override sealed void release()
         {
             isShutedDown = true;
             if (reconnectTimer != null)
@@ -61,7 +61,7 @@ namespace Bcp
             }
         }
 
-        internal override void busy(BcpSession.Connection busyConnection)
+        internal override sealed void busy(BcpSession.Connection busyConnection)
         {
             var newBusyConnection = (BcpClient.Connection)busyConnection;
             lock (clientLock)
@@ -113,7 +113,7 @@ namespace Bcp
             }
         }
 
-        internal override void idle(BcpSession.Connection idleConnection)
+        internal override sealed void idle(BcpSession.Connection idleConnection)
         {
             var newIdleConnection = (BcpClient.Connection)idleConnection;
             lock (clientLock)
@@ -128,7 +128,7 @@ namespace Bcp
             }
         }
 
-        internal override void close(BcpSession.Connection closeConnection)
+        internal override sealed void close(BcpSession.Connection closeConnection)
         {
             var newCloseConnection = (BcpClient.Connection)closeConnection;
             lock (clientLock)

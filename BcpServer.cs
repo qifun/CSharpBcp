@@ -19,14 +19,11 @@ namespace Bcp
 
         protected abstract class Session : BcpSession
         {
-            private byte[] sessionId = new byte[Bcp.NumBytesSessionId];
+            private byte[] sessionId;
 
-            public Session()
+            public Session(byte[] sessionId)
             {
-            }
-
-            public Session(byte sessionId)
-            {
+                this.sessionId = sessionId;
             }
 
             internal override BcpSession.Connection newConnection()
@@ -34,20 +31,20 @@ namespace Bcp
                 return new BcpServer.Connection();
             }
 
-            internal override void release()
+            internal override sealed void release()
             {
                 sessions.Remove(this.sessionId);
             }
 
-            internal override void busy(BcpSession.Connection connection)
+            internal override sealed void busy(BcpSession.Connection connection)
             {
             }
 
-            internal override void idle(BcpSession.Connection connection)
+            internal override sealed void idle(BcpSession.Connection connection)
             {
             }
 
-            internal override void close(BcpSession.Connection connection)
+            internal override sealed void close(BcpSession.Connection connection)
             {
             }
 
