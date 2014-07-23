@@ -30,22 +30,22 @@ namespace Bcp
             }
         }
 
-        internal class ClientConnection : BcpSession.Connection
+        new internal class Connection : BcpSession.Connection
         {
             public Timer busyTimer;
             public Bcp.ConnectionState connectionState = Bcp.ConnectionState.ConnectionIdle;
         }
 
-        internal override BcpSession.Connection newConnection()
+        internal override sealed BcpSession.Connection newConnection()
         {
-            return new BcpClient.ClientConnection();
+            return new BcpClient.Connection();
         }
 
         protected abstract Stream connect();
 
         private delegate Stream AsycConnectCaller();
 
-        internal override void release()
+        internal override sealed void release()
         {
             isShutedDown = true;
             if (reconnectTimer != null)
@@ -60,9 +60,9 @@ namespace Bcp
             }
         }
 
-        internal override void busy(BcpSession.Connection busyConnection)
+        internal override sealed void busy(BcpSession.Connection busyConnection)
         {
-            var newBusyConnection = (BcpClient.ClientConnection)busyConnection;
+            var newBusyConnection = (BcpClient.Connection)busyConnection;
             if (reconnectTimer != null)
             {
                 reconnectTimer.Dispose();
@@ -77,7 +77,7 @@ namespace Bcp
                 bool isExistIdleConnection = false;
                 foreach (var connection in connections.Values)
                 {
-                    var newConnection = (BcpClient.ClientConnection)connection;
+                    var newConnection = (BcpClient.Connection)connection;
                     if (newConnection.stream != null && newConnection.connectionState == Bcp.ConnectionState.ConnectionIdle)
                     {
                         isExistIdleConnection = true;
@@ -99,7 +99,7 @@ namespace Bcp
         {
             lock (sessionLock)
             {
-                var busyConnection = (BcpClient.ClientConnection)source;
+                var busyConnection = (BcpClient.Connection)source;
                 if (busyConnection.stream != null)
                 {
                     busyConnection.busyTimer.Dispose();
@@ -110,9 +110,9 @@ namespace Bcp
             }
         }
 
-        internal override void idle(BcpSession.Connection idleConnection)
+        internal override sealed void idle(BcpSession.Connection idleConnection)
         {
-            var newIdleConnection = (BcpClient.ClientConnection)idleConnection;
+            var newIdleConnection = (BcpClient.Connection)idleConnection;
             if (newIdleConnection.busyTimer != null)
             {
                 newIdleConnection.busyTimer.Dispose();
@@ -122,9 +122,9 @@ namespace Bcp
             checkFinishConnection();
         }
 
-        internal override void close(BcpSession.Connection closeConnection)
+        internal override sealed void close(BcpSession.Connection closeConnection)
         {
-            var newCloseConnection = (BcpClient.ClientConnection)closeConnection;
+            var newCloseConnection = (BcpClient.Connection)closeConnection;
             var connectionSize = connections.Count();
             if (newCloseConnection.busyTimer != null)
             {
@@ -179,7 +179,7 @@ namespace Bcp
                 }
             }
             bool isAllConnectionSlow = true;
-            foreach (BcpClient.ClientConnection connection in connections.Values)
+            foreach (BcpClient.Connection connection in connections.Values)
             {
                 if (!(connection.stream == null || connection.connectionState == Bcp.ConnectionState.ConnectionSlow))
                 {
@@ -235,7 +235,7 @@ namespace Bcp
         {
             if (connections.Count() > 1)
             {
-                foreach (BcpClient.ClientConnection connection in connections.Values)
+                foreach (BcpClient.Connection connection in connections.Values)
                 {
                     if (connection.stream != null && connection.connectionState == Bcp.ConnectionState.ConnectionIdle)
                     {
@@ -248,7 +248,7 @@ namespace Bcp
                                     foreach (KeyValuePair<uint, BcpSession.Connection> connectionKeyValue in connections)
                                     {
                                         var toFinishConnectionId = connectionKeyValue.Key;
-                                        var toFinishConnection = (BcpClient.ClientConnection)connectionKeyValue.Value;
+                                        var toFinishConnection = (BcpClient.Connection)connectionKeyValue.Value;
                                         if (connection.stream != null &&
                                             connection.connectionState == Bcp.ConnectionState.ConnectionIdle)
                                         {
