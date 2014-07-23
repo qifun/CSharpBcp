@@ -376,6 +376,7 @@ namespace Bcp
                                 close(connection);
                                 var stream = connection.stream;
                                 var heartBeatTimer = connection.HeartBeatTimer;
+                                heartBeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
                                 heartBeatTimer.Dispose();
                                 connection.HeartBeatTimer = null;
                                 connection.stream = null;
@@ -425,7 +426,9 @@ namespace Bcp
                 connection.HeartBeatTimer = null;
                 if (heartBeatTimer != null)
                 {
+                    heartBeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
                     heartBeatTimer.Dispose();
+                    heartBeatTimer = null;
                 }
             }
             var packId = connection.NumAcknowledgeReceivedForData;
@@ -664,6 +667,7 @@ namespace Bcp
                                             {
                                                 originalConnection.stream.Dispose();
                                                 originalConnection.stream = null;
+                                                originalConnection.HeartBeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
                                                 originalConnection.HeartBeatTimer.Dispose();
                                                 originalConnection.HeartBeatTimer = null;
                                             }
@@ -700,6 +704,7 @@ namespace Bcp
             if (!connection.IsShutedDown)
             {
                 var oldTimer = connection.HeartBeatTimer;
+                oldTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 oldTimer.Dispose();
                 oldTimer = null;
                 var newHeartBeatTimer = new Timer(heartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
@@ -735,6 +740,7 @@ namespace Bcp
                 if (connection.stream != null)
                 {
                     var oldHeartBeatTimer = connection.HeartBeatTimer;
+                    oldHeartBeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
                     oldHeartBeatTimer.Dispose();
                     connection.HeartBeatTimer = null;
                     connection.stream.Dispose();

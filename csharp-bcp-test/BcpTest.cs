@@ -393,7 +393,9 @@ namespace Bcp
                 {
                     lock (testLock)
                     {
-                        serverReceivedResult.Add(UTF8Encoding.Default.GetString(buffers[0].Array));
+                        string receivedString = UTF8Encoding.Default.GetString(buffers[0].Array);
+                        Debug.WriteLine("@@@@@@@@@@@@@@@@@@@@@@@Test server received string: " + receivedString);
+                        serverReceivedResult.Add(receivedString);
                         Monitor.Pulse(testLock);
                     }
                 }
@@ -492,7 +494,7 @@ namespace Bcp
                 }
             }
 
-            // clientSocket.Close();
+            clientSocket.Close();
             client.SendString("c");
             client.SendString("d");
 

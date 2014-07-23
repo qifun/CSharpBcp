@@ -50,11 +50,13 @@ namespace Bcp
             isShutedDown = true;
             if (reconnectTimer != null)
             {
+                reconnectTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 reconnectTimer.Dispose();
                 reconnectTimer = null;
             }
             if (idleTimer != null)
             {
+                idleTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 idleTimer.Dispose();
                 idleTimer = null;
             }
@@ -65,6 +67,7 @@ namespace Bcp
             var newBusyConnection = (BcpClient.Connection)busyConnection;
             if (reconnectTimer != null)
             {
+                reconnectTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 reconnectTimer.Dispose();
                 reconnectTimer = null;
             }
@@ -88,6 +91,7 @@ namespace Bcp
                 {
                     if (idleTimer != null)
                     {
+                        idleTimer.Change(Timeout.Infinite, Timeout.Infinite);
                         idleTimer.Dispose();
                         idleTimer = null;
                     }
@@ -102,6 +106,7 @@ namespace Bcp
                 var busyConnection = (BcpClient.Connection)source;
                 if (busyConnection.stream != null)
                 {
+                    busyConnection.busyTimer.Change(Timeout.Infinite, Timeout.Infinite);
                     busyConnection.busyTimer.Dispose();
                     busyConnection.busyTimer = null;
                     busyConnection.connectionState = Bcp.ConnectionState.ConnectionBusy;
@@ -115,6 +120,7 @@ namespace Bcp
             var newIdleConnection = (BcpClient.Connection)idleConnection;
             if (newIdleConnection.busyTimer != null)
             {
+                newIdleConnection.busyTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 newIdleConnection.busyTimer.Dispose();
                 newIdleConnection.busyTimer = null;
             }
@@ -128,6 +134,7 @@ namespace Bcp
             var connectionSize = connections.Count();
             if (newCloseConnection.busyTimer != null)
             {
+                newCloseConnection.busyTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 newCloseConnection.busyTimer.Dispose();
                 newCloseConnection.busyTimer = null;
             }
