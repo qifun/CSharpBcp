@@ -10,7 +10,7 @@ namespace Bcp
 {
     public abstract class BcpServer
     {
-        private static Dictionary<byte[], BcpServer.Session> sessions = new Dictionary<byte[], Session>();
+        private static Dictionary<string, BcpServer.Session> sessions = new Dictionary<string, Session>();
         private Object serverLock = new Object();
 
         internal class Connection : BcpSession.Connection
@@ -37,7 +37,8 @@ namespace Bcp
 
             internal override sealed void release()
             {
-                sessions.Remove(this.sessionId);
+                string sessionKey = Convert.ToBase64String(sessionId);
+                sessions.Remove(sessionKey);
             }
 
             internal override sealed void busy(BcpSession.Connection connection)
@@ -67,18 +68,19 @@ namespace Bcp
             BcpDelegate.ProcessReadHead processReadHead = delegate(Bcp.ConnectionHead connectionHead)
             {
                 var sessionId = connectionHead.SessionId;
+                string sessionKey = Convert.ToBase64String(sessionId);
                 var connectionId = connectionHead.ConnectionId;
                 Debug.WriteLine("BcpServer add incomming socket, sessionId: " + sessionId + ", connectionId: " + connectionId);
                 lock (serverLock)
                 {
                     BcpServer.Session session;
-                    if (sessions.TryGetValue(sessionId, out session))
+                    if (sessions.TryGetValue(sessionKey, out session))
                     {
                     }
                     else
                     {
                         session = newSession(sessionId);
-                        sessions.Add(sessionId, session);
+                        sessions.Add(sessionKey, session);
                         session.internalAccepted();
                     }
                     session.addStream(connectionId, stream);

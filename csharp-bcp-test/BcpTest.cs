@@ -394,7 +394,7 @@ namespace Bcp
                     lock (testLock)
                     {
                         string receivedString = UTF8Encoding.Default.GetString(buffers[0].Array);
-                        Debug.WriteLine("@@@@@@@@@@@@@@@@@@@@@@@Test server received string: " + receivedString);
+                        Debug.WriteLine("Test server received string: " + receivedString);
                         serverReceivedResult.Add(receivedString);
                         Monitor.Pulse(testLock);
                     }
