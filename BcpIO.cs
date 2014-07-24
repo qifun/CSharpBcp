@@ -76,29 +76,29 @@ namespace Bcp
             stream.WriteByte((byte)value);
         }
 
-        private static void Write(Stream stream, Bcp.Acknowledge packet)
+        public static void Write(Stream stream, Bcp.Acknowledge packet)
         {
             stream.WriteByte(Bcp.Acknowledge.HeadByte);
         }
 
-        private static void Write(Stream stream, Bcp.Renew packet)
+        public static void Write(Stream stream, Bcp.Renew packet)
         {
             stream.WriteByte(Bcp.Renew.HeadByte);
         }
 
-        private static void Write(Stream stream, Bcp.Finish packet)
+        public static void Write(Stream stream, Bcp.Finish packet)
         {
             stream.WriteByte(Bcp.Finish.HeadByte);
         }
 
-        private static void Write(Stream stream, Bcp.RetransmissionFinish packet)
+        public static void Write(Stream stream, Bcp.RetransmissionFinish packet)
         {
             stream.WriteByte(Bcp.RetransmissionFinish.HeadByte);
             writeUnsignedVarint(stream, packet.ConnectionId);
             writeUnsignedVarint(stream, packet.PackId);
         }
 
-        private static void Write(Stream stream, Bcp.RetransmissionData packet)
+        public static void Write(Stream stream, Bcp.RetransmissionData packet)
         {
             stream.WriteByte(Bcp.RetransmissionData.HeadByte);
             writeUnsignedVarint(stream, packet.ConnectionId);
@@ -110,7 +110,7 @@ namespace Bcp
             }
         }
 
-        private static void Write(Stream stream, Bcp.Data packet)
+        public static void Write(Stream stream, Bcp.Data packet)
         {
             stream.WriteByte(Bcp.Data.HeadByte);
             writeUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
@@ -120,12 +120,12 @@ namespace Bcp
             }
         }
 
-        private static void Write(Stream stream, Bcp.ShutDown packet)
+        public static void Write(Stream stream, Bcp.ShutDown packet)
         {
             stream.WriteByte(Bcp.ShutDown.HeadByte);
         }
 
-        private static void Write(Stream stream, Bcp.HeartBeat packet)
+        public static void Write(Stream stream, Bcp.HeartBeat packet)
         {
             stream.WriteByte(Bcp.HeartBeat.HeadByte);
         }
