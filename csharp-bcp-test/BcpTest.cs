@@ -593,6 +593,7 @@ namespace Bcp
                 lock (testLock)
                 {
                     clientInterrupteResult = true;
+                    Monitor.Pulse(testLock);
                 }
             }
 

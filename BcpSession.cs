@@ -722,9 +722,9 @@ namespace Bcp
             {
                 if (connection.stream != null)
                 {
-                    BcpIO.Write(connection.stream, new Bcp.HeartBeat());
                     try
                     {
+                        BcpIO.Write(connection.stream, new Bcp.HeartBeat());
                         connection.stream.Flush();
                     }
                     catch
@@ -754,6 +754,7 @@ namespace Bcp
             sessionState = SessionState.Unavailable;
             packQueue = new Queue<Bcp.IAcknowledgeRequired>();
             connections.Clear();
+            release();
             interrupted();
         }
 
@@ -789,7 +790,10 @@ namespace Bcp
                 if (connections.Count >= Bcp.MaxConnectionsPerSession ||
                     activeConnectionNum() >= Bcp.MaxActiveConnectionsPerSession)
                 {
-                    stream.Dispose();
+                    if (stream != null)
+                    {
+                        stream.Dispose();
+                    }
                 }
                 if (connectionId < oldLastConnectionId ||
                     connectionId - oldLastConnectionId + connections.Count >= Bcp.MaxConnectionsPerSession)
@@ -819,7 +823,7 @@ namespace Bcp
                         connections.Add(connectionId, connection);
                     }
                     lastConnectionId = connectionId;
-                    if (connection.stream == null)
+                    if (connection.stream == null && stream != null)
                     {
                         connection.stream = stream;
                         addOpenConnection(connection);
@@ -829,7 +833,10 @@ namespace Bcp
                     }
                     else
                     {
-                        stream.Dispose();
+                        if (stream != null)
+                        {
+                            stream.Dispose();
+                        }
                     }
                 }
             }

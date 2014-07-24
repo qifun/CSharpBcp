@@ -179,7 +179,11 @@ namespace Bcp
                 Debug.WriteLine("Connect error: " + e);
                 lock (sessionLock)
                 {
-                    startReconnectTimer();
+                    isConnecting = false;
+                    if (!isShutedDown)
+                    {
+                        startReconnectTimer();
+                    }
                 }
             }
             return stream;
@@ -225,26 +229,26 @@ namespace Bcp
             AsycConnectCaller caller = (AsycConnectCaller)result.AsyncDelegate;
             uint connectionId = (uint)ar.AsyncState;
             Stream stream = caller.EndInvoke(ar);
-            if (stream != null)
+            Debug.WriteLine("Connect Success!");
+            lock (sessionLock)
             {
-                Debug.WriteLine("Connect Success!");
-                lock (sessionLock)
+                if (!isShutedDown)
+                {
+                    BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, connectionId));
+                    addStream(connectionId, stream);
+                    Debug.WriteLine("Client added stream!");
+                    isConnecting = false;
+                }
+                else
                 {
                     if (stream != null)
                     {
-                        if (!isShutedDown)
-                        {
-                            BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, connectionId));
-                            addStream(connectionId, stream);
-                            Debug.WriteLine("Client added stream!");
-                            isConnecting = false;
-                        }
-                        else
-                        {
-                            stream.Dispose();
-                        }
-                        stream.Flush();
+                        stream.Dispose();
                     }
+                }
+                if (stream != null)
+                {
+                    stream.Flush();
                 }
             }
         }
