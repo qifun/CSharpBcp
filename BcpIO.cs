@@ -15,7 +15,6 @@ namespace Bcp
 
         private delegate void ProcessReadAll();
 
-        // TODO check whether exception handler is null
         private static void readUnsignedVarint(Stream stream, ProcessReadVarint processReadVarint, BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var buffer = new byte[1];
@@ -323,7 +322,7 @@ namespace Bcp
                 {
                     processReadHead(new Bcp.ConnectionHead(sessionId, connectionId));
                 };
-                readUnsignedVarint(stream, processReadConnectionId, null);
+                readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
             };
             readAll(stream, sessionId, 0, Bcp.NumBytesSessionId, processReadAll, exceptionHandler);
         }
