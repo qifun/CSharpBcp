@@ -478,9 +478,10 @@ namespace Bcp
                         var packId = connection.NumDataReceived;
                         connection.NumDataReceived = packId + 1;
                         dataReceived(connectionId, connection, packId, buffer);
+                        connection.stream.Flush();
                     }
                     startReceive(connectionId, connection);
-                    connection.stream.Flush();
+
                 }
                 else if (packet is Bcp.RetransmissionData)
                 {
@@ -506,7 +507,7 @@ namespace Bcp
                                 internalInterrupt();
                             }
                             else
-                            {                           
+                            {
                                 if (oldLastConnectionId <= dataConnectionId)
                                 {
                                     lastConnectionId = dataConnectionId;
@@ -522,14 +523,14 @@ namespace Bcp
                                 }
                             }
                         }
+                        connection.stream.Flush();
                     }
                     startReceive(connectionId, connection);
-                    connection.stream.Flush();
                 }
                 else if (packet is Bcp.Acknowledge)
                 {
                     lock (sessionLock)
-                    {                    
+                    {
                         Debug.WriteLine("Before receive acknowledge, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                         var originalPack = connection.UnconfirmedPackets.Dequeue();
                         if (connection.UnconfirmedPackets.Count() == 0)
@@ -594,14 +595,14 @@ namespace Bcp
                         var packId = connection.NumDataReceived;
                         connection.FinishID = packId;
                         cleanUp(connectionId, connection);
+                        connection.stream.Dispose();
+                        connection.stream = null;
                     }
-                    connection.stream.Dispose();
-                    connection.stream = null;
                 }
                 else if (packet is Bcp.RetransmissionFinish)
                 {
                     lock (sessionLock)
-                    {                    
+                    {
                         Debug.WriteLine("Before receive retransmission finish, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                         BcpIO.Write(connection.stream, new Bcp.Acknowledge());
                         var retransmissionFinishPack = (Bcp.RetransmissionFinish)packet;
@@ -638,11 +639,11 @@ namespace Bcp
                                 {
                                 }
                             }
-                        }
+                        }      
+                        connection.stream.Flush();
                         Debug.WriteLine("After receive retransmission finish, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                     }
                     startReceive(connectionId, connection);
-                    connection.stream.Flush();
                 }
                 else if (packet is Bcp.ShutDown)
                 {

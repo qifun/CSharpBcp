@@ -10,7 +10,7 @@ namespace Bcp
 {
     public abstract class BcpServer
     {
-        private static Dictionary<string, BcpServer.Session> sessions = new Dictionary<string, Session>();
+        private Dictionary<string, BcpServer.Session> sessions = new Dictionary<string, Session>();
         private Object serverLock = new Object();
 
         internal class Connection : BcpSession.Connection
@@ -24,10 +24,12 @@ namespace Bcp
             }
 
             private byte[] sessionId;
+            private BcpServer bcpServer;
 
-            public Session(byte[] sessionId)
+            public Session(BcpServer bcpServer, byte[] sessionId)
             {
                 this.sessionId = sessionId;
+                this.bcpServer = bcpServer;
             }
 
             internal override BcpSession.Connection newConnection()
@@ -38,7 +40,7 @@ namespace Bcp
             internal override sealed void release()
             {
                 string sessionKey = Convert.ToBase64String(sessionId);
-                sessions.Remove(sessionKey);
+                bcpServer.sessions.Remove(sessionKey);
             }
 
             internal override sealed void busy(BcpSession.Connection connection)

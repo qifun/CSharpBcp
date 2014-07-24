@@ -106,9 +106,12 @@ namespace Bcp
                 var busyConnection = (BcpClient.Connection)source;
                 if (busyConnection.stream != null)
                 {
-                    busyConnection.busyTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    busyConnection.busyTimer.Dispose();
-                    busyConnection.busyTimer = null;
+                    if (busyConnection.busyTimer != null)
+                    {
+                        busyConnection.busyTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                        busyConnection.busyTimer.Dispose();
+                        busyConnection.busyTimer = null;
+                    }
                     busyConnection.connectionState = Bcp.ConnectionState.ConnectionBusy;
                 }
                 increaseConnection();
