@@ -99,7 +99,7 @@ namespace Bcp
             internal Timer HeartBeatTimer;
         }
 
-        protected Object sessionLock = new Object();
+        internal Object sessionLock = new Object();
 
         private long allConfirmed = long.MaxValue;
 
