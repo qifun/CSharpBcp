@@ -19,10 +19,12 @@ namespace Bcp
         public struct ConnectionHead
         {
             public readonly byte[] SessionId;
+            public readonly bool IsRenew;
             public readonly uint ConnectionId;
-            public ConnectionHead(byte[] sessionId, uint connectionId)
+            public ConnectionHead(byte[] sessionId, bool isRenew, uint connectionId)
             {
                 SessionId = sessionId;
+                IsRenew = isRenew;
                 ConnectionId = connectionId;
             }
         }
@@ -71,11 +73,6 @@ namespace Bcp
 
             uint IRetransmission.ConnectionId { get { return ConnectionId; } }
             uint IRetransmission.PackId { get { return PackId; } }
-        }
-
-        public struct Renew : IClientToServer
-        {
-            public const byte HeadByte = 3;
         }
 
         public struct Finish : IClientToServer, IServerToClient, IAcknowledgeRequired

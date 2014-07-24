@@ -639,7 +639,7 @@ namespace Bcp
                                 {
                                 }
                             }
-                        }      
+                        }
                         connection.stream.Flush();
                         Debug.WriteLine("After receive retransmission finish, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                     }
@@ -651,38 +651,6 @@ namespace Bcp
                     lock (sessionLock)
                     {
                         checkShutDown();
-                    }
-                }
-                else if (packet is Bcp.Renew)
-                {
-                    lock (sessionLock)
-                    {
-                        switch (sessionState)
-                        {
-                            case SessionState.Available:
-                                {
-                                    foreach (var openConnections in sendingConnectionQueue.Values)
-                                    {
-                                        foreach (var originalConnection in openConnections)
-                                        {
-                                            if (originalConnection != connection)
-                                            {
-                                                originalConnection.stream.Dispose();
-                                                originalConnection.stream = null;
-                                                originalConnection.HeartBeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                                                originalConnection.HeartBeatTimer.Dispose();
-                                                originalConnection.HeartBeatTimer = null;
-                                            }
-                                        }
-                                    }
-                                    break;
-                                }
-                            case SessionState.Unavailable:
-                                break;
-                        }
-                        sessionState = SessionState.Available;
-                        connections.Clear();
-                        connections.Add(connectionId, connection);
                     }
                 }
             };
@@ -712,6 +680,34 @@ namespace Bcp
                 var newHeartBeatTimer = new Timer(heartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
                 connection.HeartBeatTimer = newHeartBeatTimer;
             }
+        }
+
+        internal void renewSession()
+        {
+            switch (sessionState)
+            {
+                case SessionState.Available:
+                    {
+                        foreach (var openConnections in sendingConnectionQueue.Values)
+                        {
+                            foreach (var originalConnection in openConnections)
+                            {
+
+                                originalConnection.stream.Dispose();
+                                originalConnection.stream = null;
+                                originalConnection.HeartBeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                                originalConnection.HeartBeatTimer.Dispose();
+                                originalConnection.HeartBeatTimer = null;
+                            }
+                        }
+                        break;
+                    }
+                case SessionState.Unavailable:
+                    break;
+            }
+            sessionState = SessionState.Available;
+            sendingConnectionQueue.Clear();
+            connections.Clear();
         }
 
         private void heartBeatEvent(Object source)

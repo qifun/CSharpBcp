@@ -80,11 +80,6 @@ namespace Bcp
             stream.WriteByte(Bcp.Acknowledge.HeadByte);
         }
 
-        public static void Write(Stream stream, Bcp.Renew packet)
-        {
-            stream.WriteByte(Bcp.Renew.HeadByte);
-        }
-
         public static void Write(Stream stream, Bcp.Finish packet)
         {
             stream.WriteByte(Bcp.Finish.HeadByte);
@@ -139,7 +134,6 @@ namespace Bcp
             dictionary.Add(typeof(Bcp.RetransmissionFinish), (stream, packet) => Write(stream, (Bcp.RetransmissionFinish)packet));
             dictionary.Add(typeof(Bcp.ShutDown), (stream, packet) => Write(stream, (Bcp.ShutDown)packet));
             dictionary.Add(typeof(Bcp.HeartBeat), (stream, packet) => Write(stream, (Bcp.HeartBeat)packet));
-            dictionary.Add(typeof(Bcp.Renew), (stream, packet) => Write(stream, (Bcp.Renew)packet));
             return dictionary;
         }
 
@@ -282,9 +276,6 @@ namespace Bcp
                         case Bcp.Acknowledge.HeadByte:
                             processRead(new Bcp.Acknowledge());
                             break;
-                        case Bcp.Renew.HeadByte:
-                            processRead(new Bcp.Renew());
-                            break;
                         case Bcp.Finish.HeadByte:
                             processRead(new Bcp.Finish());
                             break;
@@ -318,11 +309,15 @@ namespace Bcp
             var sessionId = new byte[Bcp.NumBytesSessionId];
             ProcessReadAll processReadAll = delegate()
             {
-                ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
+                ProcessReadVarint processReadIsRenew = delegate(uint isRenew)
                 {
-                    processReadHead(new Bcp.ConnectionHead(sessionId, connectionId));
+                    ProcessReadVarint processReadConnectionId = delegate(uint connectionId)
+                    {
+                        processReadHead(new Bcp.ConnectionHead(sessionId, Convert.ToBoolean(isRenew), connectionId));
+                    };
+                    readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
                 };
-                readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                readUnsignedVarint(stream, processReadIsRenew, exceptionHandler);
             };
             readAll(stream, sessionId, 0, Bcp.NumBytesSessionId, processReadAll, exceptionHandler);
         }
@@ -332,6 +327,7 @@ namespace Bcp
             try
             {
                 stream.Write(head.SessionId, 0, Bcp.NumBytesSessionId);
+                writeUnsignedVarint(stream, Convert.ToUInt32(head.IsRenew));
                 writeUnsignedVarint(stream, head.ConnectionId);
             }
             catch

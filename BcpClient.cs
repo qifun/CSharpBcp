@@ -19,6 +19,7 @@ namespace Bcp
         private uint nextConnectionId = 0;
         private bool isConnecting = false;
         private bool isShutedDown = false;
+        private bool isRenew = false;
 
         public BcpClient()
         {
@@ -30,6 +31,18 @@ namespace Bcp
                 increaseConnection();
             }
         }
+
+        public BcpClient(byte[] sessionId)
+        {
+            lock (sessionLock)
+            {
+                isRenew = true;
+                this.sessionId = (byte[])sessionId.Clone();
+                renewSession();
+            }
+        }
+
+        public byte[] SessionId { get { return (byte[])sessionId.Clone(); } }
 
         new internal class Connection : BcpSession.Connection
         {
@@ -222,6 +235,15 @@ namespace Bcp
             }
         }
 
+        private void renewSession()
+        {
+            isConnecting = true;
+            var connectionId = nextConnectionId + 1;
+            nextConnectionId += 1;
+            AsycConnectCaller asyncConnectCaller = new AsycConnectCaller(internalConnect);
+            asyncConnectCaller.BeginInvoke(new AsyncCallback(afterConnect), connectionId);
+        }
+
         private void afterConnect(IAsyncResult ar)
         {
             Debug.WriteLine("Handle after connect!");
@@ -234,7 +256,7 @@ namespace Bcp
             {
                 if (!isShutedDown)
                 {
-                    BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, connectionId));
+                    BcpIO.WriteHead(stream, new Bcp.ConnectionHead(sessionId, isRenew, connectionId));
                     addStream(connectionId, stream);
                     Debug.WriteLine("Client added stream!");
                     isConnecting = false;

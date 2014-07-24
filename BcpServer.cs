@@ -85,6 +85,10 @@ namespace Bcp
                         sessions.Add(sessionKey, session);
                         session.internalAccepted();
                     }
+                    if (connectionHead.IsRenew)
+                    {
+                        session.renewSession();
+                    }
                     session.addStream(connectionId, stream);
                     Debug.WriteLine("Server added stream!");
                 }
