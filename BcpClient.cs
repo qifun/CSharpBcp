@@ -7,6 +7,7 @@ using System.Threading;
 using System.IO;
 using System.Runtime.Remoting.Messaging;
 using System.Diagnostics;
+using System.Net.Sockets;
 
 namespace Bcp
 {
@@ -41,7 +42,7 @@ namespace Bcp
             return new BcpClient.Connection();
         }
 
-        protected abstract Stream connect();
+        protected abstract Socket connect();
 
         private delegate Stream AsycConnectCaller();
 
@@ -162,14 +163,20 @@ namespace Bcp
 
         private Stream internalConnect()
         {
+            Socket socket = null;
             Stream stream = null;
             try
             {
-                stream = connect();
+                socket = connect();
+                socket.Blocking = true;
+                socket.NoDelay = true;
+                socket.ReceiveTimeout = (int)Bcp.ReadingTimeoutMilliseconds;
+                socket.SendTimeout = (int)Bcp.WritingTimeoutMilliseconds;
+                stream = new NetworkStream(socket);
             }
             catch (Exception e)
             {
-                Debug.WriteLine("Connect error: " + e.Message);
+                Debug.WriteLine("Connect error: " + e);
                 lock (sessionLock)
                 {
                     startReconnectTimer();
@@ -180,6 +187,7 @@ namespace Bcp
 
         private void increaseConnection()
         {
+            Debug.WriteLine("Client increase connection.");
             var activeConnectionNum = 0;
             foreach (var connection in connections.Values)
             {

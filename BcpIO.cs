@@ -24,36 +24,36 @@ namespace Bcp
             AsyncCallback asyncCallback = null;
             asyncCallback = asyncResult =>
             {
-                int numBytesRead = stream.EndRead(asyncResult);
-                if (numBytesRead != 1)
+                try
                 {
-                    exceptionHandler(new EndOfStreamException());
-                }
-                uint b = buffer[0];
-                if (i < 32)
-                {
-                    if (b >= 0x80)
+                    int numBytesRead = stream.EndRead(asyncResult);
+                    if (numBytesRead != 1)
                     {
-                        result |= ((b & 0x7f) << i);
-                        i += 7;
-                        try
+                        exceptionHandler(new EndOfStreamException());
+                    }
+                    uint b = buffer[0];
+                    if (i < 32)
+                    {
+                        if (b >= 0x80)
                         {
+                            result |= ((b & 0x7f) << i);
+                            i += 7;
                             stream.BeginRead(buffer, 0, 1, asyncCallback, null);
                         }
-                        catch (Exception e)
+                        else
                         {
-                            exceptionHandler(e);
+                            result |= (b << i);
+                            processReadVarint(result);
                         }
                     }
                     else
                     {
-                        result |= (b << i);
-                        processReadVarint(result);
+                        exceptionHandler(new BcpException.VarintTooBig());
                     }
                 }
-                else
+                catch (Exception e)
                 {
-                    exceptionHandler(new BcpException.VarintTooBig());
+                    exceptionHandler(e);
                 }
             };
             try
@@ -171,30 +171,30 @@ namespace Bcp
             AsyncCallback asyncCallback = null;
             asyncCallback = asyncResult =>
             {
-                int numBytesRead = stream.EndRead(asyncResult);
-                if (numBytesRead == 0)
+                try
                 {
-                    exceptionHandler(new EndOfStreamException());
-                }
-                else
-                {
-                    offset += numBytesRead;
-
-                    if (offset < count)
+                    int numBytesRead = stream.EndRead(asyncResult);
+                    if (numBytesRead == 0)
                     {
-                        try
-                        {
-                            stream.BeginRead(buffer, offset, count, asyncCallback, null);
-                        }
-                        catch (Exception e)
-                        {
-                            exceptionHandler(e);
-                        }
+                        exceptionHandler(new EndOfStreamException());
                     }
                     else
                     {
-                        processReadAll();
+                        offset += numBytesRead;
+
+                        if (offset < count)
+                        {
+                            stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                        }
+                        else
+                        {
+                            processReadAll();
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    exceptionHandler(e);
                 }
             };
             try

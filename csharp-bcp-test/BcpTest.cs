@@ -125,21 +125,15 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            protected override Stream connect()
+            protected override Socket connect()
             {
                 try
                 {
                     Debug.WriteLine("Connecting...");
-                    NetworkStream stream;
                     EndPoint ep = localEndPoint;
                     Socket socket = new Socket(ep.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                     socket.Connect(ep);
-                    socket.Blocking = true;
-                    socket.NoDelay = true;
-                    socket.ReceiveTimeout = (int)Bcp.ReadingTimeoutMilliseconds;
-                    socket.SendTimeout = (int)Bcp.WritingTimeoutMilliseconds;
-                    stream = new NetworkStream(socket);
-                    return stream;
+                    return socket;
                 }
                 catch
                 {
@@ -264,22 +258,16 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            protected override Stream connect()
+            protected override Socket connect()
             {
                 try
                 {
                     Debug.WriteLine("Connecting...");
-                    NetworkStream stream;
                     EndPoint ep = localEndPoint;
                     Socket socket = new Socket(ep.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                     socket.Connect(ep);
-                    socket.Blocking = true;
-                    socket.NoDelay = true;
-                    socket.ReceiveTimeout = (int)Bcp.ReadingTimeoutMilliseconds;
-                    socket.SendTimeout = (int)Bcp.WritingTimeoutMilliseconds;
-                    stream = new NetworkStream(socket);
                     clientSocket = socket;
-                    return stream;
+                    return socket;
                 }
                 catch
                 {
@@ -412,22 +400,16 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            protected override Stream connect()
+            protected override Socket connect()
             {
                 try
                 {
                     Debug.WriteLine("Connecting...");
-                    NetworkStream stream;
                     EndPoint ep = localEndPoint;
                     Socket socket = new Socket(ep.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                     socket.Connect(ep);
-                    socket.Blocking = true;
-                    socket.NoDelay = true;
-                    socket.ReceiveTimeout = (int)Bcp.ReadingTimeoutMilliseconds;
-                    socket.SendTimeout = (int)Bcp.WritingTimeoutMilliseconds;
-                    stream = new NetworkStream(socket);
                     clientSocket = socket;
-                    return stream;
+                    return socket;
                 }
                 catch
                 {
@@ -513,6 +495,126 @@ namespace Bcp
             result.Add("d");
             CollectionAssert.AreEquivalent(serverReceivedResult, result);
 
+            client.ShutDown();
+            server.Clear();
+        }
+    }
+
+    [TestClass]
+    public class ClientInterrupeTest
+    {
+        static Object testLock = new Object();
+        volatile static bool clientInterrupteResult = false;
+
+        class InterrupteServer : TestServer
+        {
+            protected override BcpServer.Session newSession(byte[] sessionId)
+            {
+                return new InterrupteSession(sessionId);
+            }
+
+            protected class InterrupteSession : BcpServer.Session
+            {
+                public InterrupteSession()
+                {
+                }
+
+                public InterrupteSession(byte[] sesssionId)
+                {
+                }
+
+                protected override void accepted()
+                {
+                }
+
+                protected override void unavailable()
+                {
+                }
+
+                protected override void available()
+                {
+                }
+
+                protected override void shutedDown()
+                {
+                }
+
+                protected override void interrupted()
+                {
+                }
+
+                protected override void received(IList<ArraySegment<byte>> buffers)
+                {
+                }
+            }
+        }
+
+        class InterrupteClient : BcpClient
+        {
+
+            private EndPoint localEndPoint;
+
+            public InterrupteClient(EndPoint localEndPoint)
+            {
+                this.localEndPoint = localEndPoint;
+            }
+
+            protected override Socket connect()
+            {
+                try
+                {
+                    Debug.WriteLine("Connecting...");
+                    EndPoint ep = localEndPoint;
+                    Socket socket = new Socket(ep.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                    socket.Connect(ep);
+                    socket.Shutdown(SocketShutdown.Receive);
+                    return socket;
+                }
+                catch
+                {
+                    throw new SocketException();
+                }
+            }
+
+            protected override void unavailable()
+            {
+            }
+
+            protected override void available()
+            {
+            }
+
+            protected override void shutedDown()
+            {
+            }
+
+            protected override void interrupted()
+            {
+                lock (testLock)
+                {
+                    clientInterrupteResult = true;
+                }
+            }
+
+            protected override void received(IList<ArraySegment<byte>> buffers)
+            {
+            }
+        }
+
+        [TestMethod]
+        public void ClientInterrupte()
+        {
+            var server = new InterrupteServer();
+            var client = new InterrupteClient(server.LocalEndPoint);
+
+            lock (testLock)
+            {
+                while (clientInterrupteResult == false)
+                {
+                    Monitor.Wait(testLock);
+                }
+            }
+            Assert.IsTrue(clientInterrupteResult);
             client.ShutDown();
             server.Clear();
         }
