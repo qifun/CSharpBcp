@@ -15,7 +15,7 @@ namespace Bcp
 
         private delegate void ProcessReadAll();
 
-        private static void readUnsignedVarint(Stream stream, ProcessReadVarint processReadVarint, BcpDelegate.ExceptionHandler exceptionHandler)
+        private static void ReadUnsignedVarint(Stream stream, ProcessReadVarint processReadVarint, BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var buffer = new byte[1];
             var i = 0;
@@ -65,7 +65,7 @@ namespace Bcp
             }
         }
 
-        private static void writeUnsignedVarint(Stream stream, uint value)
+        private static void WriteUnsignedVarint(Stream stream, uint value)
         {
             while ((value & 0xFFFFFF80) != 0)
             {
@@ -88,16 +88,16 @@ namespace Bcp
         public static void Write(Stream stream, Bcp.RetransmissionFinish packet)
         {
             stream.WriteByte(Bcp.RetransmissionFinish.HeadByte);
-            writeUnsignedVarint(stream, packet.ConnectionId);
-            writeUnsignedVarint(stream, packet.PackId);
+            WriteUnsignedVarint(stream, packet.ConnectionId);
+            WriteUnsignedVarint(stream, packet.PackId);
         }
 
         public static void Write(Stream stream, Bcp.RetransmissionData packet)
         {
             stream.WriteByte(Bcp.RetransmissionData.HeadByte);
-            writeUnsignedVarint(stream, packet.ConnectionId);
-            writeUnsignedVarint(stream, packet.PackId);
-            writeUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
+            WriteUnsignedVarint(stream, packet.ConnectionId);
+            WriteUnsignedVarint(stream, packet.PackId);
+            WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
             foreach (var buffer in packet.Buffers)
             {
                 stream.Write(buffer.Array, buffer.Offset, buffer.Count);
@@ -107,7 +107,7 @@ namespace Bcp
         public static void Write(Stream stream, Bcp.Data packet)
         {
             stream.WriteByte(Bcp.Data.HeadByte);
-            writeUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
+            WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
             foreach (var buffer in packet.Buffers)
             {
                 stream.Write(buffer.Array, buffer.Offset, buffer.Count);
@@ -124,7 +124,7 @@ namespace Bcp
             stream.WriteByte(Bcp.HeartBeat.HeadByte);
         }
 
-        private static Dictionary<Type, Action<Stream, Bcp.IPacket>> initializeWriteCallbacks()
+        private static Dictionary<Type, Action<Stream, Bcp.IPacket>> InitializeWriteCallbacks()
         {
             var dictionary = new Dictionary<Type, Action<Stream, Bcp.IPacket>>();
             dictionary.Add(typeof(Bcp.Acknowledge), (stream, packet) => Write(stream, (Bcp.Acknowledge)packet));
@@ -137,7 +137,7 @@ namespace Bcp
             return dictionary;
         }
 
-        private static Dictionary<Type, Action<Stream, Bcp.IPacket>> writeCallbacks = initializeWriteCallbacks();
+        private static Dictionary<Type, Action<Stream, Bcp.IPacket>> writeCallbacks = InitializeWriteCallbacks();
 
         public static void Write(Stream stream, Bcp.IPacket packet)
         {
@@ -153,7 +153,7 @@ namespace Bcp
             }
         }
 
-        private static void readAll(
+        private static void ReadAll(
             Stream stream,
             byte[] buffer,
             int offset,
@@ -228,9 +228,9 @@ namespace Bcp
                                     {
                                         processRead(new Bcp.Data(new[] { (new ArraySegment<byte>(buffer)) }));
                                     };
-                                    readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
+                                    ReadAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
                                 };
-                                readUnsignedVarint(stream, processReadLength, exceptionHandler);
+                                ReadUnsignedVarint(stream, processReadLength, exceptionHandler);
                                 break;
                             }
                         case Bcp.RetransmissionData.HeadByte:
@@ -250,14 +250,14 @@ namespace Bcp
                                             {
                                                 processRead(new Bcp.RetransmissionData(connectionId, packId, new[] { (new ArraySegment<byte>(buffer)) }));
                                             };
-                                            readAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
+                                            ReadAll(stream, buffer, 0, (int)length, processReadAll, exceptionHandler);
 
                                         };
-                                        readUnsignedVarint(stream, processReadLength, exceptionHandler);
+                                        ReadUnsignedVarint(stream, processReadLength, exceptionHandler);
                                     };
-                                    readUnsignedVarint(stream, processReadPackId, exceptionHandler);
+                                    ReadUnsignedVarint(stream, processReadPackId, exceptionHandler);
                                 };
-                                readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                                ReadUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
                                 break;
                             }
                         case Bcp.RetransmissionFinish.HeadByte:
@@ -268,9 +268,9 @@ namespace Bcp
                                     {
                                         processRead(new Bcp.RetransmissionFinish(connectionId, packId));
                                     };
-                                    readUnsignedVarint(stream, processReadPackId, exceptionHandler);
+                                    ReadUnsignedVarint(stream, processReadPackId, exceptionHandler);
                                 };
-                                readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                                ReadUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
                                 break;
                             }
                         case Bcp.Acknowledge.HeadByte:
@@ -315,11 +315,11 @@ namespace Bcp
                     {
                         processReadHead(new Bcp.ConnectionHead(sessionId, Convert.ToBoolean(isRenew), connectionId));
                     };
-                    readUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
+                    ReadUnsignedVarint(stream, processReadConnectionId, exceptionHandler);
                 };
-                readUnsignedVarint(stream, processReadIsRenew, exceptionHandler);
+                ReadUnsignedVarint(stream, processReadIsRenew, exceptionHandler);
             };
-            readAll(stream, sessionId, 0, Bcp.NumBytesSessionId, processReadAll, exceptionHandler);
+            ReadAll(stream, sessionId, 0, Bcp.NumBytesSessionId, processReadAll, exceptionHandler);
         }
 
         public static void WriteHead(Stream stream, Bcp.ConnectionHead head)
@@ -327,8 +327,8 @@ namespace Bcp
             try
             {
                 stream.Write(head.SessionId, 0, Bcp.NumBytesSessionId);
-                writeUnsignedVarint(stream, Convert.ToUInt32(head.IsRenew));
-                writeUnsignedVarint(stream, head.ConnectionId);
+                WriteUnsignedVarint(stream, Convert.ToUInt32(head.IsRenew));
+                WriteUnsignedVarint(stream, head.ConnectionId);
             }
             catch
             {

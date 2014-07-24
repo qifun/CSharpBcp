@@ -32,40 +32,40 @@ namespace Bcp
                 this.bcpServer = bcpServer;
             }
 
-            internal override BcpSession.Connection newConnection()
+            internal override BcpSession.Connection NewConnection()
             {
                 return new BcpServer.Connection();
             }
 
-            internal override sealed void release()
+            internal override sealed void Release()
             {
                 string sessionKey = Convert.ToBase64String(sessionId);
                 bcpServer.sessions.Remove(sessionKey);
             }
 
-            internal override sealed void busy(BcpSession.Connection connection)
+            internal override sealed void Busy(BcpSession.Connection connection)
             {
             }
 
-            internal override sealed void idle(BcpSession.Connection connection)
+            internal override sealed void Idle(BcpSession.Connection connection)
             {
             }
 
-            internal override sealed void close(BcpSession.Connection connection)
+            internal override sealed void Close(BcpSession.Connection connection)
             {
             }
 
-            protected abstract void accepted();
+            protected abstract void Accepted();
 
-            internal void internalAccepted()
+            internal void InternalAccepted()
             {
-                accepted();
+                Accepted();
             }
         }
 
-        protected abstract BcpServer.Session newSession(byte[] sessionId);
+        protected abstract BcpServer.Session NewSession(byte[] sessionId);
 
-        protected void addIncomingSocket(Stream stream)
+        protected void AddIncomingSocket(Stream stream)
         {
             BcpDelegate.ProcessReadHead processReadHead = delegate(Bcp.ConnectionHead connectionHead)
             {
@@ -81,15 +81,15 @@ namespace Bcp
                     }
                     else
                     {
-                        session = newSession(sessionId);
+                        session = NewSession(sessionId);
                         sessions.Add(sessionKey, session);
-                        session.internalAccepted();
+                        session.InternalAccepted();
                     }
                     if (connectionHead.IsRenew)
                     {
-                        session.renewSession();
+                        session.RenewSession();
                     }
-                    session.addStream(connectionId, stream);
+                    session.AddStream(connectionId, stream);
                     Debug.WriteLine("Server added stream!");
                 }
             };

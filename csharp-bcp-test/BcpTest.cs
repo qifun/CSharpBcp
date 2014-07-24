@@ -39,7 +39,7 @@ namespace Bcp
             {
                 Socket newSocket = serverSocket.EndAccept(ar);
                 NetworkStream newStream = new NetworkStream(newSocket);
-                addIncomingSocket(newStream);
+                AddIncomingSocket(newStream);
                 startAccept();
             }
             catch
@@ -62,7 +62,7 @@ namespace Bcp
 
         class PingPongServer : TestServer
         {
-            protected override BcpServer.Session newSession(byte[] sessionId)
+            protected override BcpServer.Session NewSession(byte[] sessionId)
             {
                 return new PingPongSession(sessionId);
             }
@@ -77,27 +77,27 @@ namespace Bcp
                 {
                 }
 
-                protected override void accepted()
+                protected override void Accepted()
                 {
                 }
 
-                protected override void unavailable()
+                protected override void Unavailable()
                 {
                 }
 
-                protected override void available()
+                protected override void Available()
                 {
                 }
 
-                protected override void shutedDown()
+                protected override void ShutedDown()
                 {
                 }
 
-                protected override void interrupted()
+                protected override void Interrupted()
                 {
                 }
 
-                protected override void received(IList<ArraySegment<byte>> buffers)
+                protected override void Received(IList<ArraySegment<byte>> buffers)
                 {
                     lock (testLock)
                     {
@@ -125,7 +125,7 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            protected override Socket connect()
+            protected override Socket Connect()
             {
                 try
                 {
@@ -141,23 +141,23 @@ namespace Bcp
                 }
             }
 
-            protected override void unavailable()
+            protected override void Unavailable()
             {
             }
 
-            protected override void available()
+            protected override void Available()
             {
             }
 
-            protected override void shutedDown()
+            protected override void ShutedDown()
             {
             }
 
-            protected override void interrupted()
+            protected override void Interrupted()
             {
             }
 
-            protected override void received(IList<ArraySegment<byte>> buffers)
+            protected override void Received(IList<ArraySegment<byte>> buffers)
             {
                 lock (testLock)
                 {
@@ -201,7 +201,7 @@ namespace Bcp
 
         class CloseConnectionServer : TestServer
         {
-            protected override BcpServer.Session newSession(byte[] sessionId)
+            protected override BcpServer.Session NewSession(byte[] sessionId)
             {
                 return new CloseConnectionSession(sessionId);
             }
@@ -216,27 +216,27 @@ namespace Bcp
                 {
                 }
 
-                protected override void accepted()
+                protected override void Accepted()
                 {
                 }
 
-                protected override void unavailable()
+                protected override void Unavailable()
                 {
                 }
 
-                protected override void available()
+                protected override void Available()
                 {
                 }
 
-                protected override void shutedDown()
+                protected override void ShutedDown()
                 {
                 }
 
-                protected override void interrupted()
+                protected override void Interrupted()
                 {
                 }
 
-                protected override void received(IList<ArraySegment<byte>> buffers)
+                protected override void Received(IList<ArraySegment<byte>> buffers)
                 {
                     lock (testLock)
                     {
@@ -258,7 +258,7 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            protected override Socket connect()
+            protected override Socket Connect()
             {
                 try
                 {
@@ -275,11 +275,11 @@ namespace Bcp
                 }
             }
 
-            protected override void unavailable()
+            protected override void Unavailable()
             {
             }
 
-            protected override void available()
+            protected override void Available()
             {
                 lock (testLock)
                 {
@@ -287,15 +287,15 @@ namespace Bcp
                 }
             }
 
-            protected override void shutedDown()
+            protected override void ShutedDown()
             {
             }
 
-            protected override void interrupted()
+            protected override void Interrupted()
             {
             }
 
-            protected override void received(IList<ArraySegment<byte>> buffers)
+            protected override void Received(IList<ArraySegment<byte>> buffers)
             {
             }
         }
@@ -342,7 +342,7 @@ namespace Bcp
 
         class CloseConnectionServer : TestServer
         {
-            protected override BcpServer.Session newSession(byte[] sessionId)
+            protected override BcpServer.Session NewSession(byte[] sessionId)
             {
                 return new CloseConnectionSession(sessionId);
             }
@@ -357,27 +357,27 @@ namespace Bcp
                 {
                 }
 
-                protected override void accepted()
+                protected override void Accepted()
                 {
                 }
 
-                protected override void unavailable()
+                protected override void Unavailable()
                 {
                 }
 
-                protected override void available()
+                protected override void Available()
                 {
                 }
 
-                protected override void shutedDown()
+                protected override void ShutedDown()
                 {
                 }
 
-                protected override void interrupted()
+                protected override void Interrupted()
                 {
                 }
 
-                protected override void received(IList<ArraySegment<byte>> buffers)
+                protected override void Received(IList<ArraySegment<byte>> buffers)
                 {
                     lock (testLock)
                     {
@@ -400,7 +400,7 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            protected override Socket connect()
+            protected override Socket Connect()
             {
                 try
                 {
@@ -417,11 +417,11 @@ namespace Bcp
                 }
             }
 
-            protected override void unavailable()
+            protected override void Unavailable()
             {
             }
 
-            protected override void available()
+            protected override void Available()
             {
                 lock (testLock)
                 {
@@ -429,15 +429,15 @@ namespace Bcp
                 }
             }
 
-            protected override void shutedDown()
+            protected override void ShutedDown()
             {
             }
 
-            protected override void interrupted()
+            protected override void Interrupted()
             {
             }
 
-            protected override void received(IList<ArraySegment<byte>> buffers)
+            protected override void Received(IList<ArraySegment<byte>> buffers)
             {
             }
 
@@ -508,7 +508,7 @@ namespace Bcp
 
         class InterrupteServer : TestServer
         {
-            protected override BcpServer.Session newSession(byte[] sessionId)
+            protected override BcpServer.Session NewSession(byte[] sessionId)
             {
                 return new InterrupteSession(sessionId);
             }
@@ -523,27 +523,27 @@ namespace Bcp
                 {
                 }
 
-                protected override void accepted()
+                protected override void Accepted()
                 {
                 }
 
-                protected override void unavailable()
+                protected override void Unavailable()
                 {
                 }
 
-                protected override void available()
+                protected override void Available()
                 {
                 }
 
-                protected override void shutedDown()
+                protected override void ShutedDown()
                 {
                 }
 
-                protected override void interrupted()
+                protected override void Interrupted()
                 {
                 }
 
-                protected override void received(IList<ArraySegment<byte>> buffers)
+                protected override void Received(IList<ArraySegment<byte>> buffers)
                 {
                 }
             }
@@ -559,7 +559,7 @@ namespace Bcp
                 this.localEndPoint = localEndPoint;
             }
 
-            protected override Socket connect()
+            protected override Socket Connect()
             {
                 try
                 {
@@ -576,19 +576,19 @@ namespace Bcp
                 }
             }
 
-            protected override void unavailable()
+            protected override void Unavailable()
             {
             }
 
-            protected override void available()
+            protected override void Available()
             {
             }
 
-            protected override void shutedDown()
+            protected override void ShutedDown()
             {
             }
 
-            protected override void interrupted()
+            protected override void Interrupted()
             {
                 lock (testLock)
                 {
@@ -597,7 +597,7 @@ namespace Bcp
                 }
             }
 
-            protected override void received(IList<ArraySegment<byte>> buffers)
+            protected override void Received(IList<ArraySegment<byte>> buffers)
             {
             }
         }
