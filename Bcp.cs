@@ -77,12 +77,12 @@ namespace Bcp
 
         public struct Finish : IClientToServer, IServerToClient, IAcknowledgeRequired
         {
-            public const byte HeadByte = 5;
+            public const byte HeadByte = 3;
         }
 
         public struct RetransmissionFinish : IClientToServer, IServerToClient, IAcknowledgeRequired, IRetransmission
         {
-            public const byte HeadByte = 6;
+            public const byte HeadByte = 4;
 
             public readonly uint ConnectionId;
             public readonly uint PackId;
@@ -99,12 +99,12 @@ namespace Bcp
 
         public struct ShutDown : IClientToServer, IServerToClient
         {
-            public const byte HeadByte = 7;
+            public const byte HeadByte = 5;
         }
 
         public struct HeartBeat : IClientToServer, IServerToClient
         {
-            public const byte HeadByte = 8;
+            public const byte HeadByte = 6;
         }
 
         public enum ConnectionState { ConnectionIdle, ConnectionBusy, ConnectionSlow }

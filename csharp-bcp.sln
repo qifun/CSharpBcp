@@ -5,6 +5,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp-bcp", "csharp-bcp.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp-bcp-test", "csharp-bcp-test\csharp-bcp-test.csproj", "{9F554050-DBE7-49C3-8C88-4354E58898C4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp-bcp-client-demo", "..\csharp-bcp-client-demo\csharp-bcp-client-demo.csproj", "{0FAFDF0E-3862-4C8B-8AF8-CEFAABE8B340}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FBC8C692-FA6B-46AF-93DE-9CE1BEDBE1DB} = {FBC8C692-FA6B-46AF-93DE-9CE1BEDBE1DB}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +24,10 @@ Global
 		{9F554050-DBE7-49C3-8C88-4354E58898C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F554050-DBE7-49C3-8C88-4354E58898C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9F554050-DBE7-49C3-8C88-4354E58898C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FAFDF0E-3862-4C8B-8AF8-CEFAABE8B340}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FAFDF0E-3862-4C8B-8AF8-CEFAABE8B340}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FAFDF0E-3862-4C8B-8AF8-CEFAABE8B340}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FAFDF0E-3862-4C8B-8AF8-CEFAABE8B340}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

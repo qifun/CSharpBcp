@@ -99,9 +99,9 @@ namespace Bcp
             internal Timer heartBeatTimer;
         }
 
-        internal Object SessionLock = new Object();
+        internal Object sessionLock = new Object();
 
-        private long AllConfirmed = long.MaxValue;
+        private long allConfirmed = long.MaxValue;
 
         internal abstract Connection NewConnection();
 
@@ -122,17 +122,17 @@ namespace Bcp
 
         protected abstract void Received(IList<ArraySegment<Byte>> buffers);
 
-        internal uint LastConnectionId = 0;
+        internal uint lastConnectionId = 0;
 
-        internal Dictionary<uint, Connection> Connections = new Dictionary<uint, Connection>();
+        internal Dictionary<uint, Connection> connections = new Dictionary<uint, Connection>();
 
         private enum SessionState { Available, Unavailable }
 
-        private SessionState State = SessionState.Unavailable;
+        private SessionState connectionState = SessionState.Unavailable;
 
-        private SortedDictionary<long, HashSet<Connection>> SendingConnectionQueue = NewSendingConnectionQueue();
+        private SortedDictionary<long, HashSet<Connection>> sendingConnectionQueue = NewSendingConnectionQueue();
 
-        private Queue<Bcp.IAcknowledgeRequired> PackQueue = new Queue<Bcp.IAcknowledgeRequired>();
+        private Queue<Bcp.IAcknowledgeRequired> packQueue = new Queue<Bcp.IAcknowledgeRequired>();
 
         internal abstract void Busy(Connection connection);
 
@@ -143,10 +143,10 @@ namespace Bcp
         private void AddOpenConnection(Connection connection)
         {
             HashSet<Connection> openConnections;
-            switch (State)
+            switch (connectionState)
             {
                 case SessionState.Available:
-                    if (SendingConnectionQueue.TryGetValue(AllConfirmed, out openConnections))
+                    if (sendingConnectionQueue.TryGetValue(allConfirmed, out openConnections))
                     {
                         openConnections.Add(connection);
                     }
@@ -154,15 +154,15 @@ namespace Bcp
                     {
                         openConnections = new HashSet<Connection>();
                         openConnections.Add(connection);
-                        SendingConnectionQueue.Add(AllConfirmed, openConnections);
+                        sendingConnectionQueue.Add(allConfirmed, openConnections);
                     }
                     break;
                 case SessionState.Unavailable:
-                    Debug.WriteLine("Unavailable add open connection, packQueue count: " + PackQueue.Count());
+                    Debug.WriteLine("Unavailable add open connection, packQueue count: " + packQueue.Count());
                     Stream stream = connection.stream;
-                    while (PackQueue.Count > 0)
+                    while (packQueue.Count > 0)
                     {
-                        var pack = PackQueue.Dequeue();
+                        var pack = packQueue.Dequeue();
                         BcpIO.Write(stream, pack);
                         connection.unconfirmedPackets.Enqueue(pack);
                     }
@@ -170,39 +170,39 @@ namespace Bcp
                     Available();
                     openConnections = new HashSet<Connection>();
                     openConnections.Add(connection);
-                    SendingConnectionQueue = NewSendingConnectionQueue();
-                    if (PackQueue.Count == 0)
+                    sendingConnectionQueue = NewSendingConnectionQueue();
+                    if (packQueue.Count == 0)
                     {
-                        SendingConnectionQueue.Add(AllConfirmed, openConnections);
+                        sendingConnectionQueue.Add(allConfirmed, openConnections);
                     }
                     else
                     {
-                        SendingConnectionQueue.Add(Environment.TickCount, openConnections);
+                        sendingConnectionQueue.Add(Environment.TickCount, openConnections);
                         Busy(connection);
                     }
-                    State = SessionState.Available;
-                    Debug.WriteLine("After unavailable add open connection, sendingConnectionQueue count: " + SendingConnectionQueue.Count());
+                    connectionState = SessionState.Available;
+                    Debug.WriteLine("After unavailable add open connection, sendingConnectionQueue count: " + sendingConnectionQueue.Count());
                     break;
             }
         }
 
         private void RemoveOpenConnection(Connection connection)
         {
-            Debug.WriteLine("Before remove open connection, sendingConnectionQueue: " + SendingConnectionQueue.Count);
-            switch (State)
+            Debug.WriteLine("Before remove open connection, sendingConnectionQueue: " + sendingConnectionQueue.Count);
+            switch (connectionState)
             {
                 case SessionState.Available:
                     {
-                        foreach (var connections in SendingConnectionQueue)
+                        foreach (var connections in sendingConnectionQueue)
                         {
                             if (connections.Value.Contains(connection))
                             {
                                 if (connections.Value.Count == 1)
                                 {
-                                    SendingConnectionQueue.Remove(connections.Key);
-                                    if (SendingConnectionQueue.Count == 0)
+                                    sendingConnectionQueue.Remove(connections.Key);
+                                    if (sendingConnectionQueue.Count == 0)
                                     {
-                                        State = SessionState.Unavailable;
+                                        connectionState = SessionState.Unavailable;
                                         Unavailable();
                                     }
                                 }
@@ -218,17 +218,17 @@ namespace Bcp
                 case SessionState.Unavailable:
                     break;
             }
-            Debug.WriteLine("After remove open connetion, sendConnectionQueue count: " + SendingConnectionQueue.Count());
+            Debug.WriteLine("After remove open connetion, sendConnectionQueue count: " + sendingConnectionQueue.Count());
         }
 
         private void TrySend(Bcp.IPacket newPack)
         {
-            switch (State)
+            switch (connectionState)
             {
                 case SessionState.Available:
                     {
-                        long time = SendingConnectionQueue.First().Key;
-                        HashSet<Connection> openConnections = SendingConnectionQueue.First().Value;
+                        long time = sendingConnectionQueue.First().Key;
+                        HashSet<Connection> openConnections = sendingConnectionQueue.First().Value;
                         Connection connection = openConnections.First();
                         Stream stream = connection.stream;
                         BcpIO.Write(stream, newPack);
@@ -240,9 +240,9 @@ namespace Bcp
                         openConnections.Remove(connection);
                         if (openConnections.Count == 0)
                         {
-                            SendingConnectionQueue.Remove(time);
+                            sendingConnectionQueue.Remove(time);
                         }
-                        if (SendingConnectionQueue.TryGetValue(currentTimeMillis, out currentOpenConnections))
+                        if (sendingConnectionQueue.TryGetValue(currentTimeMillis, out currentOpenConnections))
                         {
                             currentOpenConnections.Add(connection);
                         }
@@ -250,7 +250,7 @@ namespace Bcp
                         {
                             currentOpenConnections = new HashSet<Connection>();
                             currentOpenConnections.Add(connection);
-                            SendingConnectionQueue.Add(currentTimeMillis, currentOpenConnections);
+                            sendingConnectionQueue.Add(currentTimeMillis, currentOpenConnections);
                         }
                         break;
                     }
@@ -262,13 +262,13 @@ namespace Bcp
         private void Enqueue(Bcp.IAcknowledgeRequired newPack)
         {
             Debug.WriteLine("Enqueue pack: " + newPack);
-            switch (State)
+            switch (connectionState)
             {
                 case SessionState.Available:
                     {
-                        Debug.WriteLine("Before available enqueue sendingConnectionQueue count: " + SendingConnectionQueue.Count());
-                        long time = SendingConnectionQueue.First().Key;
-                        HashSet<Connection> openConnections = SendingConnectionQueue.First().Value;
+                        Debug.WriteLine("Before available enqueue sendingConnectionQueue count: " + sendingConnectionQueue.Count());
+                        long time = sendingConnectionQueue.First().Key;
+                        HashSet<Connection> openConnections = sendingConnectionQueue.First().Value;
                         Connection connection = openConnections.First();
                         Stream stream = connection.stream;
                         Busy(connection);
@@ -281,9 +281,9 @@ namespace Bcp
                         openConnections.Remove(connection);
                         if (openConnections.Count == 0)
                         {
-                            SendingConnectionQueue.Remove(time);
+                            sendingConnectionQueue.Remove(time);
                         }
-                        if (SendingConnectionQueue.TryGetValue(currentTimeMillis, out currentOpenConnections))
+                        if (sendingConnectionQueue.TryGetValue(currentTimeMillis, out currentOpenConnections))
                         {
                             currentOpenConnections.Add(connection);
                         }
@@ -291,23 +291,23 @@ namespace Bcp
                         {
                             currentOpenConnections = new HashSet<Connection>();
                             currentOpenConnections.Add(connection);
-                            SendingConnectionQueue.Add(currentTimeMillis, currentOpenConnections);
+                            sendingConnectionQueue.Add(currentTimeMillis, currentOpenConnections);
                         }
-                        Debug.WriteLine("After available enqueue sendingConnectionQueue count: " + SendingConnectionQueue.Count());
+                        Debug.WriteLine("After available enqueue sendingConnectionQueue count: " + sendingConnectionQueue.Count());
                         break;
                     }
                 case SessionState.Unavailable:
                     {
-                        Debug.WriteLine("Before Unavailable enqueue: " + PackQueue.Count());
-                        if (PackQueue.Count() >= Bcp.MaxOfflinePack)
+                        Debug.WriteLine("Before Unavailable enqueue: " + packQueue.Count());
+                        if (packQueue.Count() >= Bcp.MaxOfflinePack)
                         {
                             throw new BcpException.SendingQueueIsFull();
                         }
                         else
                         {
-                            PackQueue.Enqueue(newPack);
+                            packQueue.Enqueue(newPack);
                         }
-                        Debug.WriteLine("After Unavailable enqueue: " + PackQueue.Count());
+                        Debug.WriteLine("After Unavailable enqueue: " + packQueue.Count());
                     }
                     break;
             }
@@ -342,7 +342,7 @@ namespace Bcp
                 connection.unconfirmedPackets.Count == 0;
             if (isConnectionFinish)
             {
-                Connections.Remove(connectionId);
+                connections.Remove(connectionId);
             }
         }
 
@@ -365,11 +365,11 @@ namespace Bcp
             Debug.WriteLine("Check shut down!");
             TrySend(new Bcp.ShutDown());
             Release();
-            switch (State)
+            switch (connectionState)
             {
                 case SessionState.Available:
                     {
-                        foreach (var openConnections in SendingConnectionQueue.Values)
+                        foreach (var openConnections in sendingConnectionQueue.Values)
                         {
                             foreach (var connection in openConnections)
                             {
@@ -384,8 +384,8 @@ namespace Bcp
                                 stream.Dispose();
                             }
                         }
-                        State = SessionState.Unavailable;
-                        PackQueue = new Queue<Bcp.IAcknowledgeRequired>();
+                        connectionState = SessionState.Unavailable;
+                        packQueue = new Queue<Bcp.IAcknowledgeRequired>();
                         break;
                     }
                 case SessionState.Unavailable:
@@ -469,7 +469,7 @@ namespace Bcp
                 else if (packet is Bcp.Data)
                 {
                     Debug.WriteLine("Receive data: " + packet);
-                    lock (SessionLock)
+                    lock (sessionLock)
                     {
                         BcpIO.Write(connection.stream, new Bcp.Acknowledge());
                         var data = (Bcp.Data)packet;
@@ -486,7 +486,7 @@ namespace Bcp
                 else if (packet is Bcp.RetransmissionData)
                 {
                     Debug.WriteLine("Receive retransmission data: " + packet);
-                    lock (SessionLock)
+                    lock (sessionLock)
                     {
                         BcpIO.Write(connection.stream, new Bcp.Acknowledge());
                         var retransmissionData = (Bcp.RetransmissionData)packet;
@@ -495,14 +495,14 @@ namespace Bcp
                         var data = retransmissionData.Buffers;
                         ResetHeartBeatTimer(connection);
                         Connection dataConnection;
-                        if (Connections.TryGetValue(dataConnectionId, out dataConnection))
+                        if (connections.TryGetValue(dataConnectionId, out dataConnection))
                         {
                             DataReceived(dataConnectionId, dataConnection, packId, data);
                         }
                         else
                         {
-                            var oldLastConnectionId = LastConnectionId;
-                            if (dataConnectionId - oldLastConnectionId + Connections.Count() >= Bcp.MaxConnectionsPerSession)
+                            var oldLastConnectionId = lastConnectionId;
+                            if (dataConnectionId - oldLastConnectionId + connections.Count() >= Bcp.MaxConnectionsPerSession)
                             {
                                 InternalInterrupt();
                             }
@@ -510,13 +510,13 @@ namespace Bcp
                             {
                                 if (oldLastConnectionId <= dataConnectionId)
                                 {
-                                    LastConnectionId = dataConnectionId;
+                                    lastConnectionId = dataConnectionId;
                                     for (var id = oldLastConnectionId + 1; id < dataConnectionId; ++id)
                                     {
                                         Connection c = NewConnection();
-                                        Connections.Add(id, c);
+                                        connections.Add(id, c);
                                     }
-                                    DataReceived(dataConnectionId, Connections.Last().Value, packId, data);
+                                    DataReceived(dataConnectionId, connections.Last().Value, packId, data);
                                 }
                                 else
                                 {
@@ -529,27 +529,27 @@ namespace Bcp
                 }
                 else if (packet is Bcp.Acknowledge)
                 {
-                    lock (SessionLock)
+                    lock (sessionLock)
                     {
-                        Debug.WriteLine("Before receive acknowledge, sendingConnectionQueue: " + SendingConnectionQueue.Count);
+                        Debug.WriteLine("Before receive acknowledge, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                         var originalPack = connection.unconfirmedPackets.Dequeue();
                         if (connection.unconfirmedPackets.Count() == 0)
                         {
-                            switch (State)
+                            switch (connectionState)
                             {
                                 case SessionState.Available:
                                     {
-                                        foreach (var openConnections in SendingConnectionQueue)
+                                        foreach (var openConnections in sendingConnectionQueue)
                                         {
                                             if (openConnections.Value.Contains(connection))
                                             {
                                                 openConnections.Value.Remove(connection);
                                                 if (openConnections.Value.Count() == 0)
                                                 {
-                                                    SendingConnectionQueue.Remove(openConnections.Key);
+                                                    sendingConnectionQueue.Remove(openConnections.Key);
                                                 }
                                                 HashSet<Connection> allConfirmedConnections;
-                                                if (SendingConnectionQueue.TryGetValue(AllConfirmed, out allConfirmedConnections))
+                                                if (sendingConnectionQueue.TryGetValue(allConfirmed, out allConfirmedConnections))
                                                 {
                                                     allConfirmedConnections.Add(connection);
                                                 }
@@ -557,7 +557,7 @@ namespace Bcp
                                                 {
                                                     allConfirmedConnections = new HashSet<Connection>();
                                                     allConfirmedConnections.Add(connection);
-                                                    SendingConnectionQueue.Add(AllConfirmed, allConfirmedConnections);
+                                                    sendingConnectionQueue.Add(allConfirmed, allConfirmedConnections);
                                                 }
                                                 break;
                                             }
@@ -578,14 +578,14 @@ namespace Bcp
                         {
                         }
                         CheckConnectionFinish(connectionId, connection);
-                        Debug.WriteLine("After receive acknowledge, sendingConnectionQueue: " + SendingConnectionQueue.Count);
+                        Debug.WriteLine("After receive acknowledge, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                     }
                     StartReceive(connectionId, connection);
                 }
                 else if (packet is Bcp.Finish)
                 {
                     Debug.WriteLine("receive finish, connectionId: ", connectionId);
-                    lock (SessionLock)
+                    lock (sessionLock)
                     {
                         BcpIO.Write(connection.stream, new Bcp.Acknowledge());
                         if (!connection.isFinishSent)
@@ -601,24 +601,24 @@ namespace Bcp
                 }
                 else if (packet is Bcp.RetransmissionFinish)
                 {
-                    lock (SessionLock)
+                    lock (sessionLock)
                     {
-                        Debug.WriteLine("Before receive retransmission finish, sendingConnectionQueue: " + SendingConnectionQueue.Count);
+                        Debug.WriteLine("Before receive retransmission finish, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                         BcpIO.Write(connection.stream, new Bcp.Acknowledge());
                         var retransmissionFinishPack = (Bcp.RetransmissionFinish)packet;
                         var finishConnectionId = retransmissionFinishPack.ConnectionId;
                         var packId = retransmissionFinishPack.PackId;
                         ResetHeartBeatTimer(connection);
                         Connection finishConnection;
-                        if (Connections.TryGetValue(finishConnectionId, out finishConnection))
+                        if (connections.TryGetValue(finishConnectionId, out finishConnection))
                         {
                             RetransmissionFinishReceived(finishConnectionId, finishConnection, packId);
                             CleanUp(finishConnectionId, finishConnection);
                         }
                         else
                         {
-                            var oldLastConnectionId = LastConnectionId;
-                            if (finishConnectionId - oldLastConnectionId + Connections.Count() >= Bcp.MaxConnectionsPerSession)
+                            var oldLastConnectionId = lastConnectionId;
+                            if (finishConnectionId - oldLastConnectionId + connections.Count() >= Bcp.MaxConnectionsPerSession)
                             {
                                 InternalInterrupt();
                             }
@@ -626,14 +626,14 @@ namespace Bcp
                             {
                                 if (oldLastConnectionId < finishConnectionId)
                                 {
-                                    LastConnectionId = finishConnectionId;
+                                    lastConnectionId = finishConnectionId;
                                     for (var id = oldLastConnectionId + 1; id <= finishConnectionId; ++id)
                                     {
                                         Connection c = NewConnection();
-                                        Connections.Add(id, c);
+                                        connections.Add(id, c);
                                     }
-                                    RetransmissionFinishReceived(finishConnectionId, Connections.Last().Value, packId);
-                                    CleanUp(finishConnectionId, Connections.Last().Value);
+                                    RetransmissionFinishReceived(finishConnectionId, connections.Last().Value, packId);
+                                    CleanUp(finishConnectionId, connections.Last().Value);
                                 }
                                 else
                                 {
@@ -641,14 +641,14 @@ namespace Bcp
                             }
                         }
                         connection.stream.Flush();
-                        Debug.WriteLine("After receive retransmission finish, sendingConnectionQueue: " + SendingConnectionQueue.Count);
+                        Debug.WriteLine("After receive retransmission finish, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                     }
                     StartReceive(connectionId, connection);
                 }
                 else if (packet is Bcp.ShutDown)
                 {
                     Debug.WriteLine("Receive shut down!");
-                    lock (SessionLock)
+                    lock (sessionLock)
                     {
                         CheckShutDown();
                     }
@@ -657,7 +657,7 @@ namespace Bcp
             BcpDelegate.ExceptionHandler exceptionHandler = delegate(Exception e)
             {
                 Debug.WriteLine("Received exception: " + e.Message);
-                lock (SessionLock)
+                lock (sessionLock)
                 {
                     if (connection.stream != null)
                     {
@@ -684,11 +684,11 @@ namespace Bcp
 
         internal void RenewSession()
         {
-            switch (State)
+            switch (connectionState)
             {
                 case SessionState.Available:
                     {
-                        foreach (var openConnections in SendingConnectionQueue.Values)
+                        foreach (var openConnections in sendingConnectionQueue.Values)
                         {
                             foreach (var originalConnection in openConnections)
                             {
@@ -705,16 +705,16 @@ namespace Bcp
                 case SessionState.Unavailable:
                     break;
             }
-            State = SessionState.Available;
-            SendingConnectionQueue.Clear();
-            Connections.Clear();
+            connectionState = SessionState.Available;
+            sendingConnectionQueue.Clear();
+            connections.Clear();
         }
 
         private void HeartBeatEvent(Object source)
         {
             Debug.WriteLine("Sending heart beat!");
             var connection = (Connection)source;
-            lock (SessionLock)
+            lock (sessionLock)
             {
                 if (connection.stream != null)
                 {
@@ -733,7 +733,7 @@ namespace Bcp
         internal void InternalInterrupt()
         {
             Debug.WriteLine("Internal interrupte!");
-            foreach (var connection in Connections.Values)
+            foreach (var connection in connections.Values)
             {
                 connection.isShutedDown = true;
                 if (connection.stream != null)
@@ -747,16 +747,16 @@ namespace Bcp
                 }
                 connection.unconfirmedPackets = new Queue<Bcp.IAcknowledgeRequired>();
             }
-            State = SessionState.Unavailable;
-            PackQueue = new Queue<Bcp.IAcknowledgeRequired>();
-            Connections.Clear();
+            connectionState = SessionState.Unavailable;
+            packQueue = new Queue<Bcp.IAcknowledgeRequired>();
+            connections.Clear();
             Release();
             Interrupted();
         }
 
         public void Interrupt()
         {
-            lock (SessionLock)
+            lock (sessionLock)
             {
                 InternalInterrupt();
             }
@@ -764,7 +764,7 @@ namespace Bcp
 
         public void ShutDown()
         {
-            lock (SessionLock)
+            lock (sessionLock)
             {
                 CheckShutDown();
             }
@@ -772,7 +772,7 @@ namespace Bcp
 
         public void Send(IList<ArraySegment<Byte>> buffer)
         {
-            lock (SessionLock)
+            lock (sessionLock)
             {
                 Enqueue(new Bcp.Data(buffer));
             }
@@ -780,10 +780,10 @@ namespace Bcp
 
         internal void AddStream(uint connectionId, Stream stream)
         {
-            lock (SessionLock)
+            lock (sessionLock)
             {
-                uint oldLastConnectionId = LastConnectionId;
-                if (Connections.Count >= Bcp.MaxConnectionsPerSession ||
+                uint oldLastConnectionId = lastConnectionId;
+                if (connections.Count >= Bcp.MaxConnectionsPerSession ||
                     ActiveConnectionNum() >= Bcp.MaxActiveConnectionsPerSession)
                 {
                     if (stream != null)
@@ -792,7 +792,7 @@ namespace Bcp
                     }
                 }
                 if (connectionId < oldLastConnectionId ||
-                    connectionId - oldLastConnectionId + Connections.Count >= Bcp.MaxConnectionsPerSession)
+                    connectionId - oldLastConnectionId + connections.Count >= Bcp.MaxConnectionsPerSession)
                 {
                     InternalInterrupt();
                 }
@@ -802,23 +802,23 @@ namespace Bcp
                     {
                         for (uint id = oldLastConnectionId + 1; id < connectionId; ++id)
                         {
-                            if (!Connections.ContainsKey(id))
+                            if (!connections.ContainsKey(id))
                             {
                                 Connection c = NewConnection();
-                                Connections.Add(id, c);
+                                connections.Add(id, c);
                             }
                         }
                     }
                     Connection connection;
-                    if (Connections.TryGetValue(connectionId, out connection))
+                    if (connections.TryGetValue(connectionId, out connection))
                     {
                     }
                     else
                     {
                         connection = NewConnection();
-                        Connections.Add(connectionId, connection);
+                        connections.Add(connectionId, connection);
                     }
-                    LastConnectionId = connectionId;
+                    lastConnectionId = connectionId;
                     if (connection.stream == null && stream != null)
                     {
                         connection.stream = stream;
@@ -836,13 +836,13 @@ namespace Bcp
                     }
                 }
             }
-            Debug.WriteLine("After add stream sendingQueue count: " + SendingConnectionQueue.Count());
+            Debug.WriteLine("After add stream sendingQueue count: " + sendingConnectionQueue.Count());
         }
 
         internal int ActiveConnectionNum()
         {
             int activeConnectionNum = 0;
-            foreach (var dictionaryConnection in Connections)
+            foreach (var dictionaryConnection in connections)
             {
                 if (dictionaryConnection.Value.stream != null)
                 {

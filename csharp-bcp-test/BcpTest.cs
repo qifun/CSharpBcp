@@ -500,7 +500,6 @@ namespace Bcp
         }
     }
 
-    [TestClass]
     public class ClientInterrupeTest
     {
         static Object testLock = new Object();
