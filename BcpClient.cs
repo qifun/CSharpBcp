@@ -88,7 +88,7 @@ namespace Bcp
             var oldBusyTimer = newBusyConnection.busyTimer;
             if (oldBusyTimer == null)
             {
-                var newBusyTimer = new Timer(BusyEvent, busyConnection, 0, Bcp.BusyTimeoutMilliseconds);
+                var newBusyTimer = new Timer(BusyEvent, busyConnection, Bcp.BusyTimeoutMilliseconds, Bcp.BusyTimeoutMilliseconds);
                 newBusyConnection.busyTimer = newBusyTimer;
                 newBusyConnection.connectionState = Bcp.ConnectionState.ConnectionBusy;
                 bool isExistIdleConnection = false;
@@ -183,7 +183,6 @@ namespace Bcp
                 socket = Connect();
                 socket.Blocking = true;
                 socket.NoDelay = true;
-                socket.ReceiveTimeout = (int)Bcp.ReadingTimeoutMilliseconds;
                 socket.SendTimeout = (int)Bcp.WritingTimeoutMilliseconds;
                 stream = new NetworkStream(socket);
             }
@@ -305,7 +304,7 @@ namespace Bcp
                                     idleTimer = null;
                                 }
                             };
-                            var newIdleTimer = new Timer(idleTimerCallback, null, 0, Bcp.IdleTimeoutMilliseconds);
+                            var newIdleTimer = new Timer(idleTimerCallback, null, Bcp.IdleTimeoutMilliseconds, Bcp.IdleTimeoutMilliseconds);
                             connection.heartBeatTimer = newIdleTimer;
                         }
                         break;
@@ -323,7 +322,7 @@ namespace Bcp
                     IncreaseConnection();
                     reconnectTimer = null;
                 };
-                var newBusyTimer = new Timer(busyTimerCallback, null, 0, Bcp.BusyTimeoutMilliseconds);
+                var newBusyTimer = new Timer(busyTimerCallback, null, Bcp.ReconnectTimeoutMilliseconds, Bcp.ReconnectTimeoutMilliseconds);
                 reconnectTimer = newBusyTimer;
             }
         }

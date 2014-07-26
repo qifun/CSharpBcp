@@ -25,6 +25,7 @@ namespace Bcp
             {
                 try
                 {
+                    CancelReadTimer((Timer)asyncResult.AsyncState);
                     int numBytesRead = stream.EndRead(asyncResult);
                     if (numBytesRead != 1)
                     {
@@ -37,7 +38,7 @@ namespace Bcp
                         {
                             result |= ((b & 0x7f) << i);
                             i += 7;
-                            stream.BeginRead(buffer, 0, 1, asyncCallback, null);
+                            stream.BeginRead(buffer, 0, 1, asyncCallback, StartReadTimer(stream, exceptionHandler));
                         }
                         else
                         {
@@ -57,7 +58,7 @@ namespace Bcp
             };
             try
             {
-                stream.BeginRead(buffer, 0, 1, asyncCallback, null);
+                stream.BeginRead(buffer, 0, 1, asyncCallback, StartReadTimer(stream, exceptionHandler));
             }
             catch (Exception e)
             {
@@ -166,6 +167,7 @@ namespace Bcp
             {
                 try
                 {
+                    CancelReadTimer((Timer)asyncResult.AsyncState);
                     int numBytesRead = stream.EndRead(asyncResult);
                     if (numBytesRead == 0)
                     {
@@ -177,7 +179,7 @@ namespace Bcp
 
                         if (offset < count)
                         {
-                            stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                            stream.BeginRead(buffer, offset, count, asyncCallback, StartReadTimer(stream, exceptionHandler));
                         }
                         else
                         {
@@ -192,7 +194,7 @@ namespace Bcp
             };
             try
             {
-                stream.BeginRead(buffer, offset, count, asyncCallback, null);
+                stream.BeginRead(buffer, offset, count, asyncCallback, StartReadTimer(stream, exceptionHandler));
             }
             catch (Exception e)
             {
@@ -208,6 +210,7 @@ namespace Bcp
             {
                 try
                 {
+                    CancelReadTimer((Timer)asyncResult.AsyncState);
                     int numBytesRead = stream.EndRead(asyncResult);
                     if (numBytesRead != 1)
                     {
@@ -296,7 +299,7 @@ namespace Bcp
             };
             try
             {
-                stream.BeginRead(headBuffer, 0, 1, asyncCallback, null);
+                stream.BeginRead(headBuffer, 0, 1, asyncCallback, StartReadTimer(stream, exceptionHandler));
             }
             catch (Exception e)
             {
@@ -333,6 +336,26 @@ namespace Bcp
             catch
             {
             }
+        }
+
+        private static void CancelReadTimer(Timer readTimer)
+        {
+            if (readTimer != null)
+            {
+                readTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                readTimer = null;
+            }
+        }
+
+        private static Timer StartReadTimer(Stream stream, BcpDelegate.ExceptionHandler exceptionHandler)
+        {
+            TimerCallback readTimeoutCallback = delegate(Object source)
+            {
+                stream.Dispose();
+                exceptionHandler(new Exception());
+            };
+            var readTimer = new Timer(readTimeoutCallback, null, Bcp.ReadingTimeoutMilliseconds, Bcp.ReadingTimeoutMilliseconds);
+            return readTimer;
         }
     }
 }

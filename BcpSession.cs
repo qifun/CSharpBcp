@@ -399,6 +399,7 @@ namespace Bcp
             connection.numDataReceived = packId + 1;
             if (!connection.isFinishIDReceived)
             {
+                connection.isFinishIDReceived = true;
                 connection.finishID = packId;
                 CheckConnectionFinish(connectionId, connection);
             }
@@ -677,7 +678,7 @@ namespace Bcp
                 oldTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 oldTimer.Dispose();
                 oldTimer = null;
-                var newHeartBeatTimer = new Timer(HeartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
+                var newHeartBeatTimer = new Timer(HeartBeatEvent, connection, Bcp.HeartBeatDelayMilliseconds, Bcp.HeartBeatDelayMilliseconds);
                 connection.heartBeatTimer = newHeartBeatTimer;
             }
         }
@@ -823,7 +824,7 @@ namespace Bcp
                     {
                         connection.stream = stream;
                         AddOpenConnection(connection);
-                        var newHeartBeatTimer = new Timer(HeartBeatEvent, connection, 0, Bcp.HeartBeatDelayMilliseconds);
+                        var newHeartBeatTimer = new Timer(HeartBeatEvent, connection, Bcp.HeartBeatDelayMilliseconds, Bcp.HeartBeatDelayMilliseconds);
                         connection.heartBeatTimer = newHeartBeatTimer;
                         StartReceive(connectionId, connection);
                     }
