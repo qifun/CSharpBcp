@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Bcp
@@ -97,7 +98,14 @@ namespace Bcp
             {
                 Debug.WriteLine("BcpServer add incomming stream exception: " + e.Message);
             };
-            BcpIO.ReadHead(stream, processReadHead, exceptionHandler);
+            TimerCallback readTimeoutCallback = delegate(Object source)
+            {
+                stream.Dispose();
+                exceptionHandler(new Exception());
+            };
+            Bcp.ReadState readState = new Bcp.ReadState();
+            readState.readTimeoutTimer = new Timer(readTimeoutCallback, null, Bcp.ReadingTimeoutMilliseconds, Bcp.ReadingTimeoutMilliseconds);
+            BcpIO.ReadHead(stream, readState, processReadHead, exceptionHandler);
         }
 
     }

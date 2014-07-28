@@ -240,10 +240,8 @@ namespace Bcp
         private void renewSessionConnect()
         {
             isConnecting = true;
-            var connectionId = nextConnectionId + 1;
-            nextConnectionId += 1;
             AsycConnectCaller asyncConnectCaller = new AsycConnectCaller(InternalConnect);
-            asyncConnectCaller.BeginInvoke(new AsyncCallback(AfterConnect), connectionId);
+            asyncConnectCaller.BeginInvoke(new AsyncCallback(AfterConnect), null);
         }
 
         private void AfterConnect(IAsyncResult ar)

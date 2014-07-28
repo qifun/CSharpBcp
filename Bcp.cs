@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 namespace Bcp
 {
     public static class Bcp
@@ -108,6 +109,22 @@ namespace Bcp
         }
 
         public enum ConnectionState { ConnectionIdle, ConnectionBusy, ConnectionSlow }
+
+        public class ReadState
+        {
+            public Timer readTimeoutTimer;
+            public bool isCancel = false;
+            public void Cancel()
+            {
+                isCancel = true;
+                if (readTimeoutTimer != null)
+                {
+                    readTimeoutTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    readTimeoutTimer.Dispose();
+                    readTimeoutTimer = null;
+                }
+            }
+        }
 
     }
 }

@@ -87,6 +87,7 @@ namespace Bcp
         internal class Connection
         {
             internal Stream stream;
+            internal Bcp.ReadState readState = new Bcp.ReadState();
             internal uint finishID;
             internal bool isFinishIDReceived = false;
             internal bool isFinishSent = false;
@@ -462,6 +463,10 @@ namespace Bcp
         {
             BcpDelegate.ProcessRead processRead = delegate(Bcp.IPacket packet)
             {
+                var readTimer = connection.readState.readTimeoutTimer;
+                readTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                readTimer.Dispose();
+                readTimer = null;
                 if (packet is Bcp.HeartBeat)
                 {
                     Debug.WriteLine("Receive heart beat!");
@@ -657,7 +662,8 @@ namespace Bcp
             };
             BcpDelegate.ExceptionHandler exceptionHandler = delegate(Exception e)
             {
-                Debug.WriteLine("Received exception: " + e.Message);
+                connection.readState.Cancel();
+                Console.WriteLine("Received exception: " + e.Message);
                 lock (sessionLock)
                 {
                     if (connection.stream != null)
@@ -667,7 +673,19 @@ namespace Bcp
                     CleanUp(connectionId, connection);
                 }
             };
-            BcpIO.Read(connection.stream, processRead, exceptionHandler);
+            connection.readState.readTimeoutTimer = StartReadTimer(connection.stream, exceptionHandler);
+            BcpIO.Read(connection.stream, connection.readState, processRead, exceptionHandler);
+        }
+
+        internal Timer StartReadTimer(Stream stream, BcpDelegate.ExceptionHandler exceptionHandler)
+        {
+            TimerCallback readTimeoutCallback = delegate(Object source)
+            {
+                stream.Dispose();
+                exceptionHandler(new Exception());
+            };
+            var readTimer = new Timer(readTimeoutCallback, null, Bcp.ReadingTimeoutMilliseconds, Bcp.ReadingTimeoutMilliseconds);
+            return readTimer;
         }
 
         private void ResetHeartBeatTimer(Connection connection)
@@ -693,7 +711,8 @@ namespace Bcp
                         {
                             foreach (var originalConnection in openConnections)
                             {
-
+                                originalConnection.readState.isCancel = true;
+                                originalConnection.stream.Close();
                                 originalConnection.stream.Dispose();
                                 originalConnection.stream = null;
                                 originalConnection.heartBeatTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -706,7 +725,7 @@ namespace Bcp
                 case SessionState.Unavailable:
                     break;
             }
-            connectionState = SessionState.Available;
+            connectionState = SessionState.Unavailable;
             sendingConnectionQueue.Clear();
             connections.Clear();
         }
