@@ -32,12 +32,32 @@ namespace Bcp
             }
         }
 
+        /// <summary>
+        /// 崩溃时重置客户端
+        /// </summary>
+        /// <param name="sessionId"></param>
         public BcpClient(byte[] sessionId)
         {
             lock (sessionLock)
             {
+                isShutedDown = false;
                 isRenew = true;
                 this.sessionId = (byte[])sessionId.Clone();
+                RenewSession();
+                renewSessionConnect();
+            }
+        }
+
+        /// <summary>
+        /// Unavailable太长时间可重置客户端，所有连接都会被关闭，所有数据都会被清除
+        /// </summary>
+        public void Renew()
+        {
+            lock (sessionLock)
+            {
+                isRenew = true;
+                nextConnectionId = 0;
+                RenewSession();
                 renewSessionConnect();
             }
         }
@@ -264,6 +284,7 @@ namespace Bcp
                         Debug.WriteLine("Client added stream!");
                         Debug.WriteLine("Connection num: " + connections.Count);
                         isConnecting = false;
+                        isRenew = false;
                     }
                     else
                     {

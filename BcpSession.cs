@@ -662,15 +662,18 @@ namespace Bcp
             };
             BcpDelegate.ExceptionHandler exceptionHandler = delegate(Exception e)
             {
-                connection.readState.Cancel();
-                Console.WriteLine("Received exception: " + e.Message);
                 lock (sessionLock)
                 {
-                    if (connection.stream != null)
+                    if (!connection.readState.isCancel)
                     {
-                        connection.stream.Dispose();
+                        connection.readState.Cancel();
+                        Console.WriteLine("Received exception: " + e.Message);
+                        if (connection.stream != null)
+                        {
+                            connection.stream.Dispose();
+                        }
+                        CleanUp(connectionId, connection);
                     }
-                    CleanUp(connectionId, connection);
                 }
             };
             connection.readState.readTimeoutTimer = StartReadTimer(connection.stream, exceptionHandler);
@@ -711,7 +714,7 @@ namespace Bcp
                         {
                             foreach (var originalConnection in openConnections)
                             {
-                                originalConnection.readState.isCancel = true;
+                                originalConnection.readState.Cancel();
                                 originalConnection.stream.Close();
                                 originalConnection.stream.Dispose();
                                 originalConnection.stream = null;
@@ -725,6 +728,7 @@ namespace Bcp
                 case SessionState.Unavailable:
                     break;
             }
+            lastConnectionId = 0;
             connectionState = SessionState.Unavailable;
             sendingConnectionQueue.Clear();
             connections.Clear();

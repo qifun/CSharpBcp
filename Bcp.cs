@@ -117,7 +117,7 @@ namespace Bcp
             public void Cancel()
             {
                 isCancel = true;
-                if (readTimeoutTimer != null)
+                if (!isCancel && readTimeoutTimer != null)
                 {
                     readTimeoutTimer.Change(Timeout.Infinite, Timeout.Infinite);
                     readTimeoutTimer.Dispose();
