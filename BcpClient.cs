@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 using System.Runtime.Remoting.Messaging;
@@ -47,7 +46,7 @@ namespace Bcp
                 renewSessionConnect();
             }
         }
-
+        
         /// <summary>
         /// Unavailable太长时间可重置客户端，所有连接都会被关闭，所有数据都会被清除
         /// </summary>
