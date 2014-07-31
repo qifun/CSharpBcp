@@ -2,3 +2,5 @@ bin/
 obj/
 /*.userprefs
 /*.suo
+/TestResults/4c6a4cab-c732-4ed8-9ae9-00ea916ef5b8/*.coverage
+TestResults
