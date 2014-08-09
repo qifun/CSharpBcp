@@ -319,11 +319,13 @@ namespace Bcp
                                             break;
                                         }
                                     }
+                                    idleTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                                    idleTimer.Dispose();
                                     idleTimer = null;
                                 }
                             };
                             var newIdleTimer = new Timer(idleTimerCallback, null, Bcp.IdleTimeoutMilliseconds, Bcp.IdleTimeoutMilliseconds);
-                            connection.heartBeatTimer = newIdleTimer;
+                            idleTimer = newIdleTimer;
                         }
                         break;
                     }
