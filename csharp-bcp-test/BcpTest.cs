@@ -64,27 +64,8 @@ namespace Bcp
         {
             protected override BcpServer.Session NewSession(byte[] sessionId)
             {
-                return new PingPongSession(sessionId);
-            }
-
-            protected class PingPongSession : BcpServer.Session
-            {
-                public PingPongSession()
-                {
-                    RegisterEvent();
-                }
-
-                public PingPongSession(byte[] sesssionId)
-                {
-                    RegisterEvent();
-                }
-
-                private void RegisterEvent()
-                {
-                    this.Received += OnReceived;
-                }
-
-                private void OnReceived(object sender, ReceivedEventArgs e)
+                BcpServer.Session session = new BcpServer.Session(this, sessionId);
+                session.Received += delegate(object sender, BcpSession.ReceivedEventArgs e)
                 {
                     lock (testLock)
                     {
@@ -96,10 +77,11 @@ namespace Bcp
                         IList<ArraySegment<byte>> sendBuffer = new List<ArraySegment<byte>>();
                         ArraySegment<byte> pingArraySegment = new ArraySegment<byte>(pong, 0, pong.Length);
                         sendBuffer.Add(pingArraySegment);
-                        Send(sendBuffer);
+                        session.Send(sendBuffer);
                         Monitor.Pulse(testLock);
                     }
-                }
+                };
+                return session;
             }
         }
 
@@ -177,27 +159,8 @@ namespace Bcp
         {
             protected override BcpServer.Session NewSession(byte[] sessionId)
             {
-                return new CloseConnectionSession(sessionId);
-            }
-
-            protected class CloseConnectionSession : BcpServer.Session
-            {
-                public CloseConnectionSession()
-                {
-                    RegisterEvent();
-                }
-
-                public CloseConnectionSession(byte[] sesssionId)
-                {
-                    RegisterEvent();
-                }
-
-                private void RegisterEvent()
-                {
-                    this.Received += OnReceived;
-                }
-
-                private void OnReceived(object sender, ReceivedEventArgs e)
+                BcpServer.Session session = new BcpServer.Session(this, sessionId);
+                session.Received += delegate(object sender, BcpSession.ReceivedEventArgs e)
                 {
                     lock (testLock)
                     {
@@ -206,7 +169,8 @@ namespace Bcp
                         serverResult = UTF8Encoding.Default.GetString(ping.Array);
                         Monitor.Pulse(testLock);
                     }
-                }
+                };
+                return session;
             }
         }
 
@@ -291,27 +255,8 @@ namespace Bcp
         {
             protected override BcpServer.Session NewSession(byte[] sessionId)
             {
-                return new CloseConnectionSession(sessionId);
-            }
-
-            protected class CloseConnectionSession : BcpServer.Session
-            {
-                public CloseConnectionSession()
-                {
-                    RegisterEvent();
-                }
-
-                public CloseConnectionSession(byte[] sesssionId)
-                {
-                    RegisterEvent();
-                }
-
-                private void RegisterEvent()
-                {
-                    this.Received += OnReceived;
-                }
-
-                private void OnReceived(object sender, ReceivedEventArgs e)
+                BcpServer.Session session = new BcpServer.Session(this, sessionId);
+                session.Received += delegate(object sender, BcpSession.ReceivedEventArgs e)
                 {
                     lock (testLock)
                     {
@@ -321,7 +266,8 @@ namespace Bcp
                         serverReceivedResult.Add(receivedString);
                         Monitor.Pulse(testLock);
                     }
-                }
+                };
+                return session;
             }
         }
 
@@ -429,18 +375,7 @@ namespace Bcp
         {
             protected override BcpServer.Session NewSession(byte[] sessionId)
             {
-                return new InterrupteSession(sessionId);
-            }
-
-            protected class InterrupteSession : BcpServer.Session
-            {
-                public InterrupteSession()
-                {
-                }
-
-                public InterrupteSession(byte[] sesssionId)
-                {
-                }
+                return new BcpServer.Session(this, sessionId);
             }
         }
 
