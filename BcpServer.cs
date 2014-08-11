@@ -13,11 +13,11 @@ namespace Bcp
         private Dictionary<string, BcpServer.Session> sessions = new Dictionary<string, Session>();
         private Object serverLock = new Object();
 
-        internal class Connection : BcpSession.Connection
+        internal sealed class Connection : BcpSession.Connection
         {
         }
 
-        protected abstract class Session : BcpSession
+        protected class Session : BcpSession
         {
             public Session()
             {
@@ -55,11 +55,15 @@ namespace Bcp
             {
             }
 
-            protected abstract void Accepted();
+            public EventHandler Accepted;
 
-            internal void InternalAccepted()
+            internal void RaiseAccepted()
             {
-                Accepted();
+                EventHandler acceptedEventHandler = Accepted;
+                if (acceptedEventHandler != null)
+                {
+                    acceptedEventHandler(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -83,7 +87,7 @@ namespace Bcp
                     {
                         session = NewSession(sessionId);
                         sessions.Add(sessionKey, session);
-                        session.InternalAccepted();
+                        session.RaiseAccepted();
                     }
                     if (connectionHead.IsRenew)
                     {

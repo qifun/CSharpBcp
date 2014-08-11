@@ -71,36 +71,24 @@ namespace Bcp
             {
                 public PingPongSession()
                 {
+                    RegisterEvent();
                 }
 
                 public PingPongSession(byte[] sesssionId)
                 {
+                    RegisterEvent();
                 }
 
-                protected override void Accepted()
+                private void RegisterEvent()
                 {
+                    this.Received += OnReceived;
                 }
 
-                protected override void Unavailable()
-                {
-                }
-
-                protected override void Available()
-                {
-                }
-
-                protected override void ShutedDown()
-                {
-                }
-
-                protected override void Interrupted()
-                {
-                }
-
-                protected override void Received(IList<ArraySegment<byte>> buffers)
+                private void OnReceived(object sender, ReceivedEventArgs e)
                 {
                     lock (testLock)
                     {
+                        IList<ArraySegment<byte>> buffers = e.Buffers;
                         Debug.WriteLine("Server received ping!");
                         ArraySegment<byte> ping = buffers[0];
                         serverResult = UTF8Encoding.Default.GetString(ping.Array);
@@ -123,6 +111,7 @@ namespace Bcp
             public PingPongClint(EndPoint localEndPoint)
             {
                 this.localEndPoint = localEndPoint;
+                this.Received += OnReceived;
             }
 
             protected override Socket Connect()
@@ -141,26 +130,11 @@ namespace Bcp
                 }
             }
 
-            protected override void Unavailable()
-            {
-            }
-
-            protected override void Available()
-            {
-            }
-
-            protected override void ShutedDown()
-            {
-            }
-
-            protected override void Interrupted()
-            {
-            }
-
-            protected override void Received(IList<ArraySegment<byte>> buffers)
+            private void OnReceived(object sender, ReceivedEventArgs e)
             {
                 lock (testLock)
                 {
+                    IList<ArraySegment<byte>> buffers = e.Buffers;
                     ArraySegment<byte> pong = buffers[0];
                     clientResult = UTF8Encoding.Default.GetString(pong.Array);
                     Monitor.Pulse(testLock);
@@ -210,36 +184,24 @@ namespace Bcp
             {
                 public CloseConnectionSession()
                 {
+                    RegisterEvent();
                 }
 
                 public CloseConnectionSession(byte[] sesssionId)
                 {
+                    RegisterEvent();
                 }
 
-                protected override void Accepted()
+                private void RegisterEvent()
                 {
+                    this.Received += OnReceived;
                 }
 
-                protected override void Unavailable()
-                {
-                }
-
-                protected override void Available()
-                {
-                }
-
-                protected override void ShutedDown()
-                {
-                }
-
-                protected override void Interrupted()
-                {
-                }
-
-                protected override void Received(IList<ArraySegment<byte>> buffers)
+                private void OnReceived(object sender, ReceivedEventArgs e)
                 {
                     lock (testLock)
                     {
+                        IList<ArraySegment<byte>> buffers = e.Buffers;
                         ArraySegment<byte> ping = buffers[0];
                         serverResult = UTF8Encoding.Default.GetString(ping.Array);
                         Monitor.Pulse(testLock);
@@ -256,6 +218,7 @@ namespace Bcp
             public CloseConnectionClinet(EndPoint localEndPoint)
             {
                 this.localEndPoint = localEndPoint;
+                this.Available += OnAvailable;
             }
 
             protected override Socket Connect()
@@ -275,28 +238,12 @@ namespace Bcp
                 }
             }
 
-            protected override void Unavailable()
-            {
-            }
-
-            protected override void Available()
+            private void OnAvailable(object sender, EventArgs e)
             {
                 lock (testLock)
                 {
                     Monitor.Pulse(testLock);
                 }
-            }
-
-            protected override void ShutedDown()
-            {
-            }
-
-            protected override void Interrupted()
-            {
-            }
-
-            protected override void Received(IList<ArraySegment<byte>> buffers)
-            {
             }
         }
 
@@ -351,36 +298,24 @@ namespace Bcp
             {
                 public CloseConnectionSession()
                 {
+                    RegisterEvent();
                 }
 
                 public CloseConnectionSession(byte[] sesssionId)
                 {
+                    RegisterEvent();
                 }
 
-                protected override void Accepted()
+                private void RegisterEvent()
                 {
+                    this.Received += OnReceived;
                 }
 
-                protected override void Unavailable()
-                {
-                }
-
-                protected override void Available()
-                {
-                }
-
-                protected override void ShutedDown()
-                {
-                }
-
-                protected override void Interrupted()
-                {
-                }
-
-                protected override void Received(IList<ArraySegment<byte>> buffers)
+                private void OnReceived(object sender, ReceivedEventArgs e)
                 {
                     lock (testLock)
                     {
+                        IList<ArraySegment<byte>> buffers = e.Buffers;
                         string receivedString = UTF8Encoding.Default.GetString(buffers[0].Array);
                         Debug.WriteLine("Test server received string: " + receivedString);
                         serverReceivedResult.Add(receivedString);
@@ -398,6 +333,7 @@ namespace Bcp
             public CloseConnectionClinet(EndPoint localEndPoint)
             {
                 this.localEndPoint = localEndPoint;
+                this.Available += HandleAvailableEvent;
             }
 
             protected override Socket Connect()
@@ -417,28 +353,12 @@ namespace Bcp
                 }
             }
 
-            protected override void Unavailable()
-            {
-            }
-
-            protected override void Available()
+            private void HandleAvailableEvent(object sender, EventArgs e)
             {
                 lock (testLock)
                 {
                     Monitor.Pulse(testLock);
                 }
-            }
-
-            protected override void ShutedDown()
-            {
-            }
-
-            protected override void Interrupted()
-            {
-            }
-
-            protected override void Received(IList<ArraySegment<byte>> buffers)
-            {
             }
 
             public void SendString(string buffer)
@@ -521,30 +441,6 @@ namespace Bcp
                 public InterrupteSession(byte[] sesssionId)
                 {
                 }
-
-                protected override void Accepted()
-                {
-                }
-
-                protected override void Unavailable()
-                {
-                }
-
-                protected override void Available()
-                {
-                }
-
-                protected override void ShutedDown()
-                {
-                }
-
-                protected override void Interrupted()
-                {
-                }
-
-                protected override void Received(IList<ArraySegment<byte>> buffers)
-                {
-                }
             }
         }
 
@@ -556,6 +452,7 @@ namespace Bcp
             public InterrupteClient(EndPoint localEndPoint)
             {
                 this.localEndPoint = localEndPoint;
+                this.Interrupted += HandleInterruptedEvent;
             }
 
             protected override Socket Connect()
@@ -575,29 +472,13 @@ namespace Bcp
                 }
             }
 
-            protected override void Unavailable()
-            {
-            }
-
-            protected override void Available()
-            {
-            }
-
-            protected override void ShutedDown()
-            {
-            }
-
-            protected override void Interrupted()
+            private void HandleInterruptedEvent(object sender, EventArgs e)
             {
                 lock (testLock)
                 {
                     clientInterrupteResult = true;
                     Monitor.Pulse(testLock);
                 }
-            }
-
-            protected override void Received(IList<ArraySegment<byte>> buffers)
-            {
             }
         }
 

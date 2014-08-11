@@ -111,17 +111,28 @@ namespace Bcp
             return new SortedDictionary<long, HashSet<Connection>>(new BcpUtil.DescendingComparer<long>());
         }
 
-        protected abstract void Unavailable();
+        public event EventHandler Unavailable;
 
-        protected abstract void Available();
+        public event EventHandler Available;
 
-        protected abstract void ShutedDown();
+        public event EventHandler ShutedDown; 
 
-        protected abstract void Interrupted();
+        public event EventHandler Interrupted;
+
+        public event EventHandler<ReceivedEventArgs> Received;
+
+        public class ReceivedEventArgs : EventArgs
+        {
+            public ReceivedEventArgs(IList<ArraySegment<Byte>> buffers)
+            {
+                this.buffers = buffers;
+            }
+            private IList<ArraySegment<Byte>> buffers;
+
+            public IList<ArraySegment<Byte>> Buffers { get {return buffers; } }
+        }
 
         internal abstract void Release();
-
-        protected abstract void Received(IList<ArraySegment<Byte>> buffers);
 
         internal uint lastConnectionId = 0;
 
@@ -168,7 +179,11 @@ namespace Bcp
                         connection.unconfirmedPackets.Enqueue(pack);
                     }
                     stream.Flush();
-                    Available();
+                    EventHandler availableEventHandler = Available;
+                    if (availableEventHandler != null)
+                    {
+                        availableEventHandler(this, EventArgs.Empty);
+                    }
                     openConnections = new HashSet<Connection>();
                     openConnections.Add(connection);
                     sendingConnectionQueue = NewSendingConnectionQueue();
@@ -204,7 +219,11 @@ namespace Bcp
                                     if (sendingConnectionQueue.Count == 0)
                                     {
                                         connectionState = SessionState.Unavailable;
-                                        Unavailable();
+                                        EventHandler unavailableEventHandler = Unavailable;
+                                        if (unavailableEventHandler != null)
+                                        {
+                                            unavailableEventHandler(this, EventArgs.Empty);
+                                        }
                                     }
                                 }
                                 else
@@ -355,7 +374,11 @@ namespace Bcp
             }
             else
             {
-                Received(buffer);
+                EventHandler<ReceivedEventArgs> receivedEventHandler = Received;
+                if (receivedEventHandler != null)
+                {
+                    receivedEventHandler(this, new ReceivedEventArgs(buffer));
+                }
                 connection.receiveIDSet.Add(packId);
                 CheckConnectionFinish(connectionId, connection);
             }
@@ -392,7 +415,11 @@ namespace Bcp
                 case SessionState.Unavailable:
                     break;
             }
-            ShutedDown();
+            EventHandler shutedDownEventHandler = ShutedDown;
+            if (shutedDownEventHandler != null)
+            {
+                shutedDownEventHandler(this, EventArgs.Empty);
+            }
         }
 
         private void RetransmissionFinishReceived(uint connectionId, Connection connection, uint packId)
@@ -775,7 +802,11 @@ namespace Bcp
             packQueue = new Queue<Bcp.IAcknowledgeRequired>();
             connections.Clear();
             Release();
-            Interrupted();
+            EventHandler interruptedEventHandler = Interrupted;
+            if (interruptedEventHandler != null)
+            {
+                interruptedEventHandler(this, EventArgs.Empty);
+            }
         }
 
         public void Interrupt()

@@ -63,7 +63,7 @@ namespace Bcp
 
         public byte[] SessionId { get { return (byte[])sessionId.Clone(); } }
 
-        new internal class Connection : BcpSession.Connection
+        new internal sealed class Connection : BcpSession.Connection
         {
             public Timer busyTimer;
             public Bcp.ConnectionState connectionState = Bcp.ConnectionState.ConnectionIdle;
