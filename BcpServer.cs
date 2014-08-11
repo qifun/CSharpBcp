@@ -17,7 +17,7 @@ namespace Bcp
         {
         }
 
-        protected sealed class Session : BcpSession
+        protected class Session : BcpSession
         {
             private byte[] sessionId;
             private BcpServer bcpServer;
