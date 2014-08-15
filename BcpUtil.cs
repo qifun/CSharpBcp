@@ -14,5 +14,15 @@ namespace Bcp
                 return y.CompareTo(x);
             }
         }
+
+        public static string ArraySegmentListToString(IList<ArraySegment<byte>> buffers)
+        {
+            var stringBuffer = new StringBuilder();
+            foreach (var buffer in buffers)
+            {
+                stringBuffer.Append(Encoding.Default.GetString(buffer.ToArray()));
+            }
+            return stringBuffer.ToString();
+        }
     }
 }

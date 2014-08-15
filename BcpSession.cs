@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.IO;
 using System.Diagnostics;
+using System.Text;
 
 namespace Bcp
 {
@@ -374,6 +375,7 @@ namespace Bcp
             }
             else
             {
+                Debug.WriteLine("Received Message: " + BcpUtil.ArraySegmentListToString(buffer));
                 EventHandler<ReceivedEventArgs> receivedEventHandler = Received;
                 if (receivedEventHandler != null)
                 {
@@ -827,6 +829,7 @@ namespace Bcp
 
         public void Send(IList<ArraySegment<Byte>> buffer)
         {
+            Debug.WriteLine("Send Message: " + BcpUtil.ArraySegmentListToString(buffer));
             lock (sessionLock)
             {
                 Enqueue(new Bcp.Data(buffer));
