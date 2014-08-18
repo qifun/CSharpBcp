@@ -9,13 +9,13 @@ namespace Bcp
         public const uint MaxActiveConnectionsPerSession = 3;
         public const uint MaxConnectionsPerSession = 5;
         public const uint HeartBeatDelayMilliseconds = 3000;
-        public const uint ReadingTimeoutMilliseconds = 3000;
+        public const uint ReadingTimeoutMilliseconds = 6000;
         public const uint WritingTimeoutMilliseconds = 1000;
         public const uint BusyTimeoutMilliseconds = 500;
         public const uint ReconnectTimeoutMilliseconds = 500;
         public const uint IdleTimeoutMilliseconds = 10000;
         public const int NumBytesSessionId = 16;
-        public const uint MaxDataSize = 10000;
+        public const uint MaxDataSize = 100000;
 
         public struct ConnectionHead
         {
