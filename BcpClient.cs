@@ -24,7 +24,7 @@ namespace Bcp
         {
             lock (sessionLock)
             {
-                Random random = new Random();
+                Random random = new Random((int)DateTime.Now.Ticks & 0x0000FFFF);
                 sessionId = new byte[Bcp.NumBytesSessionId];
                 random.NextBytes(sessionId);
                 IncreaseConnection();
