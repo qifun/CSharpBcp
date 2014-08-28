@@ -1,4 +1,4 @@
-/*
+﻿/*
  * csharp-bcp
  * Copyright 2014 深圳岂凡网络有限公司 (Shenzhen QiFun Network Corp., LTD)
  * 
@@ -34,7 +34,7 @@ namespace Bcp
         private static void ReadUnsignedVarint(
             Stream stream,
             Bcp.ReadState readState,
-            ProcessReadVarint processReadVarint, 
+            ProcessReadVarint processReadVarint,
             BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var buffer = new byte[1];
@@ -97,51 +97,100 @@ namespace Bcp
 
         public static void Write(Stream stream, Bcp.Acknowledge packet)
         {
-            stream.WriteByte(Bcp.Acknowledge.HeadByte);
+            try
+            {
+                stream.WriteByte(Bcp.Acknowledge.HeadByte);
+            }
+            catch
+            {
+                stream.Close();
+            }
         }
 
         public static void Write(Stream stream, Bcp.Finish packet)
         {
-            stream.WriteByte(Bcp.Finish.HeadByte);
+            try
+            {
+                stream.WriteByte(Bcp.Finish.HeadByte);
+            }
+            catch
+            {
+                stream.Close();
+            }
         }
 
         public static void Write(Stream stream, Bcp.RetransmissionFinish packet)
         {
-            stream.WriteByte(Bcp.RetransmissionFinish.HeadByte);
-            WriteUnsignedVarint(stream, packet.ConnectionId);
-            WriteUnsignedVarint(stream, packet.PackId);
+            try
+            {
+                stream.WriteByte(Bcp.RetransmissionFinish.HeadByte);
+                WriteUnsignedVarint(stream, packet.ConnectionId);
+                WriteUnsignedVarint(stream, packet.PackId);
+            }
+            catch
+            {
+                stream.Close();
+            }
         }
 
         public static void Write(Stream stream, Bcp.RetransmissionData packet)
         {
-            stream.WriteByte(Bcp.RetransmissionData.HeadByte);
-            WriteUnsignedVarint(stream, packet.ConnectionId);
-            WriteUnsignedVarint(stream, packet.PackId);
-            WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
-            foreach (var buffer in packet.Buffers)
+            try
             {
-                stream.Write(buffer.Array, buffer.Offset, buffer.Count);
+                stream.WriteByte(Bcp.RetransmissionData.HeadByte);
+                WriteUnsignedVarint(stream, packet.ConnectionId);
+                WriteUnsignedVarint(stream, packet.PackId);
+                WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
+                foreach (var buffer in packet.Buffers)
+                {
+                    stream.Write(buffer.Array, buffer.Offset, buffer.Count);
+                }
+            }
+            catch
+            {
+                stream.Close();
             }
         }
 
         public static void Write(Stream stream, Bcp.Data packet)
         {
-            stream.WriteByte(Bcp.Data.HeadByte);
-            WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
-            foreach (var buffer in packet.Buffers)
+            try
             {
-                stream.Write(buffer.Array, buffer.Offset, buffer.Count);
+                stream.WriteByte(Bcp.Data.HeadByte);
+                WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
+                foreach (var buffer in packet.Buffers)
+                {
+                    stream.Write(buffer.Array, buffer.Offset, buffer.Count);
+                }
+            }
+            catch
+            {
+                stream.Close();
             }
         }
 
         public static void Write(Stream stream, Bcp.ShutDown packet)
         {
-            stream.WriteByte(Bcp.ShutDown.HeadByte);
+            try
+            {
+                stream.WriteByte(Bcp.ShutDown.HeadByte);
+            }
+            catch
+            {
+                stream.Close();
+            }
         }
 
         public static void Write(Stream stream, Bcp.HeartBeat packet)
         {
-            stream.WriteByte(Bcp.HeartBeat.HeadByte);
+            try
+            {
+                stream.WriteByte(Bcp.HeartBeat.HeadByte);
+            }
+            catch
+            {
+                stream.Close();
+            }
         }
 
         private static Dictionary<Type, Action<Stream, Bcp.IPacket>> InitializeWriteCallbacks()
@@ -170,6 +219,7 @@ namespace Bcp
             }
             catch
             {
+                stream.Close();
             }
         }
 
@@ -325,9 +375,9 @@ namespace Bcp
             }
         }
 
-        public static void ReadHead(Stream stream, 
-            Bcp.ReadState readState, 
-            BcpDelegate.ProcessReadHead processReadHead, 
+        public static void ReadHead(Stream stream,
+            Bcp.ReadState readState,
+            BcpDelegate.ProcessReadHead processReadHead,
             BcpDelegate.ExceptionHandler exceptionHandler)
         {
             var sessionId = new byte[Bcp.NumBytesSessionId];
