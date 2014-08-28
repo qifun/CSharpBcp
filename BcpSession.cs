@@ -339,7 +339,8 @@ namespace Bcp
                         Debug.WriteLine("Before Unavailable enqueue: " + packQueue.Count());
                         if (packQueue.Count() >= Bcp.MaxOfflinePack)
                         {
-                            throw new BcpException.SendingQueueIsFull();
+                            Debug.WriteLine("Sending queue is full!");
+                            Interrupt();
                         }
                         else
                         {
