@@ -200,7 +200,14 @@ namespace Bcp
                     EventHandler availableEventHandler = Available;
                     if (availableEventHandler != null)
                     {
-                        availableEventHandler(this, EventArgs.Empty);
+                        try
+                        {
+                            availableEventHandler(this, EventArgs.Empty);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.WriteLine("Available event occur exception: " + e);
+                        }
                     }
                     openConnections = new HashSet<Connection>();
                     openConnections.Add(connection);
@@ -240,7 +247,14 @@ namespace Bcp
                                         EventHandler unavailableEventHandler = Unavailable;
                                         if (unavailableEventHandler != null)
                                         {
-                                            unavailableEventHandler(this, EventArgs.Empty);
+                                            try
+                                            {
+                                                unavailableEventHandler(this, EventArgs.Empty);
+                                            }
+                                            catch(Exception e)
+                                            {
+                                                Debug.WriteLine("Unavailable event occur exception: " + e);
+                                            }
                                         }
                                     }
                                 }
@@ -397,7 +411,14 @@ namespace Bcp
                 EventHandler<ReceivedEventArgs> receivedEventHandler = Received;
                 if (receivedEventHandler != null)
                 {
-                    receivedEventHandler(this, new ReceivedEventArgs(buffer));
+                    try
+                    {
+                        receivedEventHandler(this, new ReceivedEventArgs(buffer));
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine("Received event occur exception: " + e);
+                    }
                 }
                 connection.receiveIDSet.Add(packId);
                 CheckConnectionFinish(connectionId, connection);
@@ -438,7 +459,14 @@ namespace Bcp
             EventHandler shutedDownEventHandler = ShutedDown;
             if (shutedDownEventHandler != null)
             {
-                shutedDownEventHandler(this, EventArgs.Empty);
+                try
+                {
+                    shutedDownEventHandler(this, EventArgs.Empty);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Shuted down BcpSession event occur exception: " + e);
+                }
             }
         }
 
@@ -825,7 +853,14 @@ namespace Bcp
             EventHandler interruptedEventHandler = Interrupted;
             if (interruptedEventHandler != null)
             {
-                interruptedEventHandler(this, EventArgs.Empty);
+                try
+                {
+                    interruptedEventHandler(this, EventArgs.Empty);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine("Interrupted event occur exception: " + e);
+                }
             }
         }
 
