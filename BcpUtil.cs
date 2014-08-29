@@ -37,7 +37,9 @@ namespace Bcp
             var stringBuffer = new StringBuilder();
             foreach (var buffer in buffers)
             {
-                stringBuffer.Append(Encoding.Default.GetString(buffer.ToArray()));
+                byte[] bytes = new byte[buffer.Count];
+                Array.Copy(buffer.Array, buffer.Offset, bytes, 0, buffer.Count);
+                stringBuffer.Append(Encoding.Default.GetString(bytes));
             }
             return stringBuffer.ToString();
         }
