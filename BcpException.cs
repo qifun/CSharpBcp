@@ -33,14 +33,6 @@ namespace Bcp
             }
         }
 
-        public class SendingQueueIsFull : BcpException
-        {
-            public SendingQueueIsFull()
-                : base()
-            {
-            }
-        }
-
         public class DataTooBig : BcpException
         {
             public DataTooBig()

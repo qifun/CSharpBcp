@@ -1,4 +1,4 @@
-/*
+﻿/*
  * csharp-bcp
  * Copyright 2014 深圳岂凡网络有限公司 (Shenzhen QiFun Network Corp., LTD)
  * 
@@ -24,6 +24,7 @@ using System.IO;
 using System.Runtime.Remoting.Messaging;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 
 namespace Bcp
 {
@@ -37,13 +38,14 @@ namespace Bcp
         private bool isShutedDown = false;
         private bool isRenew = false;
 
+        private static readonly RNGCryptoServiceProvider secureRandom = new RNGCryptoServiceProvider();
+
         public BcpClient()
         {
             lock (sessionLock)
             {
-                Random random = new Random();
                 sessionId = new byte[Bcp.NumBytesSessionId];
-                random.NextBytes(sessionId);
+                secureRandom.GetBytes(sessionId);
                 IncreaseConnection();
             }
         }

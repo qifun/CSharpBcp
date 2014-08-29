@@ -200,7 +200,14 @@ namespace Bcp
                     EventHandler availableEventHandler = Available;
                     if (availableEventHandler != null)
                     {
-                        availableEventHandler(this, EventArgs.Empty);
+                        try
+                        {
+                            availableEventHandler(this, EventArgs.Empty);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.Fail("Available event occur exception: " + e);
+                        }
                     }
                     openConnections = new HashSet<Connection>();
                     openConnections.Add(connection);
@@ -240,7 +247,14 @@ namespace Bcp
                                         EventHandler unavailableEventHandler = Unavailable;
                                         if (unavailableEventHandler != null)
                                         {
-                                            unavailableEventHandler(this, EventArgs.Empty);
+                                            try
+                                            {
+                                                unavailableEventHandler(this, EventArgs.Empty);
+                                            }
+                                            catch(Exception e)
+                                            {
+                                                Debug.Fail("Unavailable event occur exception: " + e);
+                                            }
                                         }
                                     }
                                 }
@@ -339,7 +353,8 @@ namespace Bcp
                         Debug.WriteLine("Before Unavailable enqueue: " + packQueue.Count());
                         if (packQueue.Count() >= Bcp.MaxOfflinePack)
                         {
-                            throw new BcpException.SendingQueueIsFull();
+                            Debug.WriteLine("Sending queue is full!");
+                            Interrupt();
                         }
                         else
                         {
@@ -396,7 +411,14 @@ namespace Bcp
                 EventHandler<ReceivedEventArgs> receivedEventHandler = Received;
                 if (receivedEventHandler != null)
                 {
-                    receivedEventHandler(this, new ReceivedEventArgs(buffer));
+                    try
+                    {
+                        receivedEventHandler(this, new ReceivedEventArgs(buffer));
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.Fail("Received event occur exception: " + e);
+                    }
                 }
                 connection.receiveIDSet.Add(packId);
                 CheckConnectionFinish(connectionId, connection);
@@ -437,7 +459,14 @@ namespace Bcp
             EventHandler shutedDownEventHandler = ShutedDown;
             if (shutedDownEventHandler != null)
             {
-                shutedDownEventHandler(this, EventArgs.Empty);
+                try
+                {
+                    shutedDownEventHandler(this, EventArgs.Empty);
+                }
+                catch (Exception e)
+                {
+                    Debug.Fail("Shuted down BcpSession event occur exception: " + e);
+                }
             }
         }
 
@@ -824,7 +853,14 @@ namespace Bcp
             EventHandler interruptedEventHandler = Interrupted;
             if (interruptedEventHandler != null)
             {
-                interruptedEventHandler(this, EventArgs.Empty);
+                try
+                {
+                    interruptedEventHandler(this, EventArgs.Empty);
+                }
+                catch (Exception e)
+                {
+                    Debug.Fail("Interrupted event occur exception: " + e);
+                }
             }
         }
 
