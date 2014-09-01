@@ -665,7 +665,7 @@ namespace Bcp
                 }
                 else if (packet is Bcp.Finish)
                 {
-                    Debug.WriteLine("receive finish, connectionId: ", connectionId);
+                    Debug.WriteLine("receive finish, connectionId: " + connectionId.ToString());
                     lock (sessionLock)
                     {
                         BcpIO.Write(connection.stream, new Bcp.Acknowledge());
