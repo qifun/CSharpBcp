@@ -206,7 +206,7 @@ namespace Bcp
                         }
                         catch (Exception e)
                         {
-                            Debug.Fail("Available event occur exception: " + e);
+                            Debug.WriteLine("Available event occur exception: " + e);
                         }
                     }
                     openConnections = new HashSet<Connection>();
@@ -253,7 +253,7 @@ namespace Bcp
                                             }
                                             catch(Exception e)
                                             {
-                                                Debug.Fail("Unavailable event occur exception: " + e);
+												Debug.WriteLine("Unavailable event occur exception: " + e);
                                             }
                                         }
                                     }
@@ -417,7 +417,7 @@ namespace Bcp
                     }
                     catch (Exception e)
                     {
-                        Debug.Fail("Received event occur exception: " + e);
+						Debug.WriteLine("Received event occur exception: " + e);
                     }
                 }
                 connection.receiveIDSet.Add(packId);
@@ -465,7 +465,7 @@ namespace Bcp
                 }
                 catch (Exception e)
                 {
-                    Debug.Fail("Shuted down BcpSession event occur exception: " + e);
+					Debug.WriteLine("Shuted down BcpSession event occur exception: " + e);
                 }
             }
         }
@@ -859,7 +859,7 @@ namespace Bcp
                 }
                 catch (Exception e)
                 {
-                    Debug.Fail("Interrupted event occur exception: " + e);
+					Debug.WriteLine("Interrupted event occur exception: " + e);
                 }
             }
         }
