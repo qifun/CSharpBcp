@@ -123,12 +123,12 @@ namespace Bcp
                 reconnectTimer.Dispose();
                 reconnectTimer = null;
             }
+            newBusyConnection.connectionState = Bcp.ConnectionState.ConnectionBusy;
             var oldBusyTimer = newBusyConnection.busyTimer;
             if (oldBusyTimer == null)
             {
                 var newBusyTimer = new Timer(BusyEvent, busyConnection, Bcp.BusyTimeoutMilliseconds, Bcp.BusyTimeoutMilliseconds);
                 newBusyConnection.busyTimer = newBusyTimer;
-                newBusyConnection.connectionState = Bcp.ConnectionState.ConnectionBusy;
                 bool isExistIdleConnection = false;
                 foreach (var connection in connections.Values)
                 {
