@@ -8,7 +8,7 @@
     <ProjectGuid>{FBC8C692-FA6B-46AF-93DE-9CE1BEDBE1DB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Qifun.Bcp</RootNamespace>
-    <AssemblyName>csharp-bcp</AssemblyName>
+    <AssemblyName>Qifun.Bcp.dll</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
