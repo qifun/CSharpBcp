@@ -18,7 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-namespace Bcp
+namespace Qifun.Bcp
 {
     public static class Bcp
     {

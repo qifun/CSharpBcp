@@ -26,7 +26,7 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 
-namespace Bcp
+namespace Qifun.Bcp
 {
     public abstract class BcpClient : BcpSession
     {

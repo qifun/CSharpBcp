@@ -23,7 +23,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace Bcp
+namespace Qifun.Bcp
 {
     public static class BcpIO
     {
