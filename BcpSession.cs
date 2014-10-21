@@ -23,7 +23,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Text;
 
-namespace Bcp
+namespace Qifun.Bcp
 {
     public abstract class BcpSession
     {
