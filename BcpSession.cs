@@ -472,7 +472,6 @@ namespace Qifun.Bcp
 
         private void RetransmissionFinishReceived(uint connectionId, Connection connection, uint packId)
         {
-            connection.numDataReceived = packId + 1;
             if (!connection.isFinishIDReceived)
             {
                 connection.isFinishIDReceived = true;
