@@ -270,7 +270,7 @@ namespace Qifun.Bcp
                 case SessionState.Unavailable:
                     break;
             }
-            Debug.WriteLine("After remove open connetion, sendConnectionQueue count: " + sendingConnectionQueue.Count());
+            Debug.WriteLine("After remove open connection, sendConnectionQueue count: " + sendingConnectionQueue.Count());
         }
 
         private void TrySend(Bcp.IPacket newPack)
@@ -486,7 +486,7 @@ namespace Qifun.Bcp
 
         private void CleanUp(uint connectionId, Connection connection)
         {
-            Debug.WriteLine("Cleanning up connectionId: " + connectionId);
+            Debug.WriteLine("Cleaning up connectionId: " + connectionId);
             RemoveOpenConnection(connection);
             if (!connection.isFinishSent)
             {
@@ -830,7 +830,7 @@ namespace Qifun.Bcp
 
         internal void InternalInterrupt()
         {
-            Debug.WriteLine("Internal interrupte!");
+            Debug.WriteLine("Internal interrupt!");
             foreach (var connection in connections.Values)
             {
                 connection.isShutedDown = true;
