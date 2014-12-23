@@ -1,5 +1,5 @@
 ﻿/*
- * csharp-bcp
+ * CSharpBcp
  * Copyright 2014 深圳岂凡网络有限公司 (Shenzhen QiFun Network Corp., LTD)
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
