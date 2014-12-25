@@ -27,11 +27,11 @@ namespace Qifun.Bcp
 {
     public abstract class BcpSession
     {
-        BcpCrypto iCryto = null;
+        IBcpCrypto crypto = null;
         int key;
-        public void SetCrypto(BcpCrypto crypto, int key)
+        public void SetCrypto(IBcpCrypto crypto, int key)
         {
-            this.iCryto = crypto;
+            this.crypto = crypto;
             this.key = key;
         }
 
@@ -420,7 +420,7 @@ namespace Qifun.Bcp
                 {
                     try
                     {
-                        receivedEventHandler(this, new ReceivedEventArgs(dataDecrypt(buffer)));
+                        receivedEventHandler(this, new ReceivedEventArgs(DataDecrypt(buffer)));
                     }
                     catch (Exception e)
                     {
@@ -432,15 +432,15 @@ namespace Qifun.Bcp
             }
         }
 
-        public IList<ArraySegment<Byte>> dataDecrypt(IList<ArraySegment<Byte>> buffer)
+        public IList<ArraySegment<Byte>> DataDecrypt(IList<ArraySegment<Byte>> buffer)
         {
-            if (iCryto == null)
+            if (crypto == null)
             {
                 return buffer;
             }
             else
             {
-                return iCryto.dataDecrypt(buffer, key);
+                return crypto.DataDecrypt(buffer, key);
             }
         }
 
@@ -903,19 +903,19 @@ namespace Qifun.Bcp
             Debug.WriteLine("Send Message: " + BcpUtil.ArraySegmentListToString(buffer));
             lock (sessionLock)
             {
-                Enqueue(new Bcp.Data(dataEncrypt(buffer)));
+                Enqueue(new Bcp.Data(DataEncrypt(buffer)));
             }
         }
 
-        public IList<ArraySegment<Byte>> dataEncrypt(IList<ArraySegment<Byte>> buffer)
+        public IList<ArraySegment<Byte>> DataEncrypt(IList<ArraySegment<Byte>> buffer)
         {
-            if (iCryto == null)
+            if (crypto == null)
             {
                 return buffer;
             }
             else
             {
-                return iCryto.dataEncrypt(buffer, key);
+                return crypto.DataEncrypt(buffer, key);
             }
         }
 

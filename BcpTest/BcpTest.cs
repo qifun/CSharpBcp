@@ -475,7 +475,7 @@ namespace BcpTest
                         Debug.WriteLine("Server received ping!");
                         ArraySegment<byte> ping = buffers[0];
                         serverResult = Encoding.UTF8.GetString(ping.Array);
-                        byte[] pong = new UTF8Encoding(true).GetBytes("是Xor!");
+                        byte[] pong = Encoding.UTF8.GetBytes("是Xor!");
                         IList<ArraySegment<byte>> sendBuffer = new List<ArraySegment<byte>>();
                         ArraySegment<byte> pingArraySegment = new ArraySegment<byte>(pong, 0, pong.Length);
                         sendBuffer.Add(pingArraySegment);
@@ -531,7 +531,7 @@ namespace BcpTest
             var server = new BcpXorServer();
             var client = new BcpXorClint(server.LocalEndPoint);
             client.SetCrypto(new BcpXor(), 178);
-            byte[] ping = new UTF8Encoding(true).GetBytes("你的密码是什么?");
+            byte[] ping = Encoding.UTF8.GetBytes("你的密码是什么?");
             IList<ArraySegment<byte>> sendBuffer = new List<ArraySegment<byte>>();
             ArraySegment<byte> pingArraySegment = new ArraySegment<byte>(ping, 0, ping.Length);
             sendBuffer.Add(pingArraySegment);
