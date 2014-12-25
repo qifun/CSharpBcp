@@ -39,6 +39,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="BcpClient.cs" />
+    <Compile Include="BcpCrypto.cs" />
     <Compile Include="BcpDelegate.cs" />
     <Compile Include="BcpException.cs" />
     <Compile Include="BcpIO.cs" />
@@ -46,6 +47,7 @@
     <Compile Include="BcpSession.cs" />
     <Compile Include="Bcp.cs" />
     <Compile Include="BcpUtil.cs" />
+    <Compile Include="BcpXor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

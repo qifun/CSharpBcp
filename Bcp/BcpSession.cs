@@ -27,6 +27,13 @@ namespace Qifun.Bcp
 {
     public abstract class BcpSession
     {
+        BcpCrypto iCryto = null;
+        int key;
+        public void SetCrypto(BcpCrypto crypto, int key)
+        {
+            this.iCryto = crypto;
+            this.key = key;
+        }
 
         private static bool Between(uint low, uint high, uint test)
         {
@@ -133,7 +140,7 @@ namespace Qifun.Bcp
 
         public event EventHandler Available;
 
-        public event EventHandler ShutedDown; 
+        public event EventHandler ShutedDown;
 
         public event EventHandler Interrupted;
 
@@ -147,7 +154,7 @@ namespace Qifun.Bcp
             }
             private IList<ArraySegment<Byte>> buffers;
 
-            public IList<ArraySegment<Byte>> Buffers { get {return buffers; } }
+            public IList<ArraySegment<Byte>> Buffers { get { return buffers; } }
         }
 
         internal abstract void Release();
@@ -251,9 +258,9 @@ namespace Qifun.Bcp
                                             {
                                                 unavailableEventHandler(this, EventArgs.Empty);
                                             }
-                                            catch(Exception e)
+                                            catch (Exception e)
                                             {
-												Debug.WriteLine("Unavailable event occur exception: " + e);
+                                                Debug.WriteLine("Unavailable event occur exception: " + e);
                                             }
                                         }
                                     }
@@ -413,15 +420,27 @@ namespace Qifun.Bcp
                 {
                     try
                     {
-                        receivedEventHandler(this, new ReceivedEventArgs(buffer));
+                        receivedEventHandler(this, new ReceivedEventArgs(dataDecrypt(buffer)));
                     }
                     catch (Exception e)
                     {
-						Debug.WriteLine("Received event occur exception: " + e);
+                        Debug.WriteLine("Received event occur exception: " + e);
                     }
                 }
                 connection.receiveIDSet.Add(packId);
                 CheckConnectionFinish(connectionId, connection);
+            }
+        }
+
+        public IList<ArraySegment<Byte>> dataDecrypt(IList<ArraySegment<Byte>> buffer)
+        {
+            if (iCryto == null)
+            {
+                return buffer;
+            }
+            else
+            {
+                return iCryto.dataDecrypt(buffer, key);
             }
         }
 
@@ -465,7 +484,7 @@ namespace Qifun.Bcp
                 }
                 catch (Exception e)
                 {
-					Debug.WriteLine("Shuted down BcpSession event occur exception: " + e);
+                    Debug.WriteLine("Shuted down BcpSession event occur exception: " + e);
                 }
             }
         }
@@ -858,7 +877,7 @@ namespace Qifun.Bcp
                 }
                 catch (Exception e)
                 {
-					Debug.WriteLine("Interrupted event occur exception: " + e);
+                    Debug.WriteLine("Interrupted event occur exception: " + e);
                 }
             }
         }
@@ -884,7 +903,19 @@ namespace Qifun.Bcp
             Debug.WriteLine("Send Message: " + BcpUtil.ArraySegmentListToString(buffer));
             lock (sessionLock)
             {
-                Enqueue(new Bcp.Data(buffer));
+                Enqueue(new Bcp.Data(dataEncrypt(buffer)));
+            }
+        }
+
+        public IList<ArraySegment<Byte>> dataEncrypt(IList<ArraySegment<Byte>> buffer)
+        {
+            if (iCryto == null)
+            {
+                return buffer;
+            }
+            else
+            {
+                return iCryto.dataEncrypt(buffer, key);
             }
         }
 
