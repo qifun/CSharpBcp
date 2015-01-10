@@ -741,7 +741,7 @@ namespace Qifun.Bcp
                     if (!connection.readState.isCancel)
                     {
                         connection.readState.Cancel();
-                        Console.WriteLine("Received exception: " + e.Message);
+                        Debug.WriteLine("Received exception: " + e.Message);
                         if (connection.stream != null)
                         {
                             connection.stream.Dispose();
