@@ -19,7 +19,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -137,10 +136,15 @@ namespace Qifun.Bcp
         {
             try
             {
+                int packetCount = 0;
+                foreach(var buffer in packet.Buffers)
+                {
+                    packetCount += buffer.Count;
+                }
                 stream.WriteByte(Bcp.RetransmissionData.HeadByte);
                 WriteUnsignedVarint(stream, packet.ConnectionId);
                 WriteUnsignedVarint(stream, packet.PackId);
-                WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
+                WriteUnsignedVarint(stream, (uint)packetCount);
                 foreach (var buffer in packet.Buffers)
                 {
                     stream.Write(buffer.Array, buffer.Offset, buffer.Count);
@@ -156,8 +160,13 @@ namespace Qifun.Bcp
         {
             try
             {
+                int packetCount = 0;
+                foreach(var buffer in packet.Buffers)
+                {
+                    packetCount += buffer.Count;
+                }
                 stream.WriteByte(Bcp.Data.HeadByte);
-                WriteUnsignedVarint(stream, (uint)packet.Buffers.Sum(buffer => buffer.Count));
+                WriteUnsignedVarint(stream, (uint)packetCount);
                 foreach (var buffer in packet.Buffers)
                 {
                     stream.Write(buffer.Array, buffer.Offset, buffer.Count);

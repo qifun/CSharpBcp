@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using System.IO;
@@ -97,7 +96,7 @@ namespace Qifun.Bcp
 
             public bool AllReceivedBelow(uint id)
             {
-                return (!(this.Any<uint>())) && lowID == id && highID == id;
+                return (base.Count == 0) && lowID == id && highID == id;
             }
 
         }
@@ -188,7 +187,7 @@ namespace Qifun.Bcp
                     }
                     break;
                 case SessionState.Unavailable:
-                    Debug.WriteLine("Unavailable add open connection, packQueue count: " + packQueue.Count());
+                    Debug.WriteLine("Unavailable add open connection, packQueue count: " + packQueue.Count);
                     Stream stream = connection.stream;
                     while (packQueue.Count > 0)
                     {
@@ -222,7 +221,7 @@ namespace Qifun.Bcp
                         Busy(connection);
                     }
                     connectionState = SessionState.Available;
-                    Debug.WriteLine("After unavailable add open connection, sendingConnectionQueue count: " + sendingConnectionQueue.Count());
+                    Debug.WriteLine("After unavailable add open connection, sendingConnectionQueue count: " + sendingConnectionQueue.Count);
                     break;
             }
         }
@@ -270,7 +269,7 @@ namespace Qifun.Bcp
                 case SessionState.Unavailable:
                     break;
             }
-            Debug.WriteLine("After remove open connection, sendConnectionQueue count: " + sendingConnectionQueue.Count());
+            Debug.WriteLine("After remove open connection, sendConnectionQueue count: " + sendingConnectionQueue.Count);
         }
 
         private void TrySend(Bcp.IPacket newPack)
@@ -279,9 +278,13 @@ namespace Qifun.Bcp
             {
                 case SessionState.Available:
                     {
-                        long time = sendingConnectionQueue.First().Key;
-                        HashSet<Connection> openConnections = sendingConnectionQueue.First().Value;
-                        Connection connection = openConnections.First();
+                        var sendingConnectionQueueEnumerator = sendingConnectionQueue.GetEnumerator();
+                        sendingConnectionQueueEnumerator.MoveNext();
+                        long time = sendingConnectionQueueEnumerator.Current.Key;
+                        HashSet<Connection> openConnections = sendingConnectionQueueEnumerator.Current.Value;
+                        var openConnectionsEnumerator = openConnections.GetEnumerator();
+                        openConnectionsEnumerator.MoveNext();
+                        Connection connection = openConnectionsEnumerator.Current;
                         Stream stream = connection.stream;
                         BcpIO.Write(stream, newPack);
                         stream.Flush();
@@ -318,10 +321,14 @@ namespace Qifun.Bcp
             {
                 case SessionState.Available:
                     {
-                        Debug.WriteLine("Before available enqueue sendingConnectionQueue count: " + sendingConnectionQueue.Count());
-                        long time = sendingConnectionQueue.First().Key;
-                        HashSet<Connection> openConnections = sendingConnectionQueue.First().Value;
-                        Connection connection = openConnections.First();
+                        Debug.WriteLine("Before available enqueue sendingConnectionQueue count: " + sendingConnectionQueue.Count);
+                        var sendingConnectionQueueEnumerator = sendingConnectionQueue.GetEnumerator();
+                        sendingConnectionQueueEnumerator.MoveNext();
+                        long time = sendingConnectionQueueEnumerator.Current.Key;
+                        HashSet<Connection> openConnections = sendingConnectionQueueEnumerator.Current.Value;
+                        var openConnectionsEnumerator = openConnections.GetEnumerator();
+                        openConnectionsEnumerator.MoveNext();
+                        Connection connection = openConnectionsEnumerator.Current;
                         Stream stream = connection.stream;
                         Busy(connection);
                         BcpIO.Write(stream, newPack);
@@ -345,13 +352,13 @@ namespace Qifun.Bcp
                             currentOpenConnections.Add(connection);
                             sendingConnectionQueue.Add(currentTimeMillis, currentOpenConnections);
                         }
-                        Debug.WriteLine("After available enqueue sendingConnectionQueue count: " + sendingConnectionQueue.Count());
+                        Debug.WriteLine("After available enqueue sendingConnectionQueue count: " + sendingConnectionQueue.Count);
                         break;
                     }
                 case SessionState.Unavailable:
                     {
-                        Debug.WriteLine("Before Unavailable enqueue: " + packQueue.Count());
-                        if (packQueue.Count() >= Bcp.MaxOfflinePack)
+                        Debug.WriteLine("Before Unavailable enqueue: " + packQueue.Count);
+                        if (packQueue.Count >= Bcp.MaxOfflinePack)
                         {
                             Debug.WriteLine("Sending queue is full!");
                             Interrupt();
@@ -360,7 +367,7 @@ namespace Qifun.Bcp
                         {
                             packQueue.Enqueue(newPack);
                         }
-                        Debug.WriteLine("After Unavailable enqueue: " + packQueue.Count());
+                        Debug.WriteLine("After Unavailable enqueue: " + packQueue.Count);
                     }
                     break;
             }
@@ -533,6 +540,17 @@ namespace Qifun.Bcp
             CheckConnectionFinish(connectionId, connection);
         }
 
+        private Connection GetLastConnection()
+        {
+            var enumerator = connections.GetEnumerator();
+            var connection = enumerator.Current.Value;
+            while(enumerator.MoveNext())
+            {
+                connection = enumerator.Current.Value;
+            }
+            return connection;
+        }
+
         private void StartReceive(uint connectionId, Connection connection)
         {
             BcpDelegate.ProcessRead processRead = delegate(Bcp.IPacket packet)
@@ -582,7 +600,7 @@ namespace Qifun.Bcp
                         else
                         {
                             var oldLastConnectionId = lastConnectionId;
-                            if (dataConnectionId - oldLastConnectionId + connections.Count() >= Bcp.MaxConnectionsPerSession)
+                            if (dataConnectionId - oldLastConnectionId + connections.Count >= Bcp.MaxConnectionsPerSession)
                             {
                                 InternalInterrupt();
                             }
@@ -596,7 +614,7 @@ namespace Qifun.Bcp
                                         Connection c = NewConnection();
                                         connections.Add(id, c);
                                     }
-                                    DataReceived(dataConnectionId, connections.Last().Value, packId, data);
+                                    DataReceived(dataConnectionId, GetLastConnection(), packId, data);
                                 }
                                 else
                                 {
@@ -613,7 +631,7 @@ namespace Qifun.Bcp
                     {
                         Debug.WriteLine("Before receive acknowledge, sendingConnectionQueue: " + sendingConnectionQueue.Count);
                         var originalPack = connection.unconfirmedPackets.Dequeue();
-                        if (connection.unconfirmedPackets.Count() == 0)
+                        if (connection.unconfirmedPackets.Count == 0)
                         {
                             switch (connectionState)
                             {
@@ -624,7 +642,7 @@ namespace Qifun.Bcp
                                             if (openConnections.Value.Contains(connection))
                                             {
                                                 openConnections.Value.Remove(connection);
-                                                if (openConnections.Value.Count() == 0)
+                                                if (openConnections.Value.Count == 0)
                                                 {
                                                     sendingConnectionQueue.Remove(openConnections.Key);
                                                 }
@@ -698,7 +716,7 @@ namespace Qifun.Bcp
                         else
                         {
                             var oldLastConnectionId = lastConnectionId;
-                            if (finishConnectionId - oldLastConnectionId + connections.Count() >= Bcp.MaxConnectionsPerSession)
+                            if (finishConnectionId - oldLastConnectionId + connections.Count >= Bcp.MaxConnectionsPerSession)
                             {
                                 InternalInterrupt();
                             }
@@ -712,8 +730,8 @@ namespace Qifun.Bcp
                                         Connection c = NewConnection();
                                         connections.Add(id, c);
                                     }
-                                    RetransmissionFinishReceived(finishConnectionId, connections.Last().Value, packId);
-                                    CleanUp(finishConnectionId, connections.Last().Value);
+                                    RetransmissionFinishReceived(finishConnectionId, GetLastConnection(), packId);
+                                    CleanUp(finishConnectionId, GetLastConnection());
                                 }
                                 else
                                 {
@@ -741,7 +759,7 @@ namespace Qifun.Bcp
                     if (!connection.readState.isCancel)
                     {
                         connection.readState.Cancel();
-                        Debug.WriteLine("Received exception: " + e.Message);
+                        Console.WriteLine("Received exception: " + e.Message);
                         if (connection.stream != null)
                         {
                             connection.stream.Dispose();
@@ -946,7 +964,7 @@ namespace Qifun.Bcp
                     }
                 }
             }
-            Debug.WriteLine("After add stream sendingQueue count: " + sendingConnectionQueue.Count());
+            Debug.WriteLine("After add stream sendingQueue count: " + sendingConnectionQueue.Count);
         }
 
         internal int ActiveConnectionNum()

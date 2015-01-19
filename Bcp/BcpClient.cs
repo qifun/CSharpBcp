@@ -17,14 +17,13 @@
 
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.IO;
 using System.Runtime.Remoting.Messaging;
-using System.Diagnostics;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Diagnostics;
 
 namespace Qifun.Bcp
 {
@@ -139,7 +138,7 @@ namespace Qifun.Bcp
                         break;
                     }
                 }
-                if (!(connections.Count() > 1 && isExistIdleConnection))
+                if (!(connections.Count > 1 && isExistIdleConnection))
                 {
                     if (idleTimer != null)
                     {
@@ -186,7 +185,7 @@ namespace Qifun.Bcp
         internal override sealed void Close(BcpSession.Connection closeConnection)
         {
             var newCloseConnection = (BcpClient.Connection)closeConnection;
-            var connectionSize = connections.Count();
+            var connectionSize = connections.Count;
             if (newCloseConnection.busyTimer != null)
             {
                 newCloseConnection.busyTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -224,7 +223,7 @@ namespace Qifun.Bcp
                 socket.SendTimeout = (int)Bcp.WritingTimeoutMilliseconds;
                 stream = new NetworkStream(socket);
             }
-            catch (Exception e)
+            catch (Exception e) 
             {
                 Debug.WriteLine("Connect error: " + e);
                 lock (sessionLock)
@@ -245,6 +244,7 @@ namespace Qifun.Bcp
             if (reconnectTimer != null)
             {
                 reconnectTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                reconnectTimer.Dispose();
                 reconnectTimer = null;
             }
             var activeConnectionNum = 0;
@@ -265,29 +265,29 @@ namespace Qifun.Bcp
                 }
             }
             if (!isConnecting &&
-                connections.Count() < Bcp.MaxConnectionsPerSession &&
+                connections.Count < Bcp.MaxConnectionsPerSession &&
                 activeConnectionNum < Bcp.MaxActiveConnectionsPerSession &&
                 isAllConnectionSlow)
             {
                 isConnecting = true;
-                AsycConnectCaller asyncConnectCaller = new AsycConnectCaller(InternalConnect);
-                asyncConnectCaller.BeginInvoke(new AsyncCallback(AfterConnect), null);
+                Stream stream = InternalConnect();
+                AfterConnect(stream);
+                // Android 上不支持异步调用
+                // AsycConnectCaller asyncConnectCaller = new AsycConnectCaller(InternalConnect);
+                // asyncConnectCaller.BeginInvoke(new AsyncCallback(AfterConnect), null);
             }
         }
 
         private void renewSessionConnect()
         {
             isConnecting = true;
-            AsycConnectCaller asyncConnectCaller = new AsycConnectCaller(InternalConnect);
-            asyncConnectCaller.BeginInvoke(new AsyncCallback(AfterConnect), null);
+            Stream stream = InternalConnect();
+            AfterConnect(stream);
         }
 
-        private void AfterConnect(IAsyncResult ar)
+        private void AfterConnect(Stream stream)
         {
             Debug.WriteLine("Handle after connect!");
-            AsyncResult result = (AsyncResult)ar;
-            AsycConnectCaller caller = (AsycConnectCaller)result.AsyncDelegate;
-            Stream stream = caller.EndInvoke(ar);
             if (stream != null)
             {
                 Debug.WriteLine("Connect Success!");
@@ -315,7 +315,7 @@ namespace Qifun.Bcp
 
         private void CheckFinishConnection()
         {
-            if (connections.Count() > 1)
+            if (connections.Count > 1)
             {
                 foreach (BcpClient.Connection connection in connections.Values)
                 {
@@ -356,10 +356,9 @@ namespace Qifun.Bcp
         {
             if (reconnectTimer == null)
             {
-                TimerCallback busyTimerCallback = delegate(Object source)
+                TimerCallback busyTimerCallback = delegate(object source)
                 {
                     IncreaseConnection();
-                    reconnectTimer = null;
                 };
                 var newBusyTimer = new Timer(busyTimerCallback, null, Bcp.ReconnectTimeoutMilliseconds, Bcp.ReconnectTimeoutMilliseconds);
                 reconnectTimer = newBusyTimer;
